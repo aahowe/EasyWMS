@@ -1,0 +1,89 @@
+{
+  "name": "easywms",
+  "version": "1.0.0",
+  "private": true,
+  "description": "简易仓库管理系统 - EasyWMS",
+  "keywords": [
+    "wms",
+    "warehouse",
+    "inventory",
+    "vue3",
+    "golang",
+    "gin"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 turbo build",
+    "build:analyze": "turbo build:analyze",
+    "build:frontend": "pnpm run build --filter=@easywms/frontend",
+    "clean": "node ./scripts/clean.mjs",
+    "dev": "turbo-run dev",
+    "dev:frontend": "pnpm -F @easywms/frontend run dev",
+    "format": "vsh lint --format",
+    "lint": "vsh lint",
+    "postinstall": "pnpm -r run stub --if-present",
+    "preinstall": "npx only-allow pnpm",
+    "preview": "turbo-run preview",
+    "reinstall": "pnpm clean --del-lock && pnpm install",
+    "test:unit": "vitest run --dom",
+    "update:deps": "npx taze -r -w"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "catalog:",
+    "@changesets/cli": "catalog:",
+    "@types/node": "catalog:",
+    "@vben/commitlint-config": "workspace:*",
+    "@vben/eslint-config": "workspace:*",
+    "@vben/prettier-config": "workspace:*",
+    "@vben/stylelint-config": "workspace:*",
+    "@vben/tailwind-config": "workspace:*",
+    "@vben/tsconfig": "workspace:*",
+    "@vben/turbo-run": "workspace:*",
+    "@vben/vite-config": "workspace:*",
+    "@vben/vsh": "workspace:*",
+    "@vitejs/plugin-vue": "catalog:",
+    "@vitejs/plugin-vue-jsx": "catalog:",
+    "@vue/test-utils": "catalog:",
+    "autoprefixer": "catalog:",
+    "cross-env": "catalog:",
+    "cspell": "catalog:",
+    "happy-dom": "catalog:",
+    "is-ci": "catalog:",
+    "lefthook": "catalog:",
+    "rimraf": "catalog:",
+    "tailwindcss": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:",
+    "unbuild": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "vue": "catalog:",
+    "vue-tsc": "catalog:"
+  },
+  "engines": {
+    "node": ">=20.12.0",
+    "pnpm": ">=10.0.0"
+  },
+  "packageManager": "pnpm@10.22.0",
+  "pnpm": {
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "eslint": "*"
+      }
+    },
+    "overrides": {
+      "@ast-grep/napi": "catalog:",
+      "@ctrl/tinycolor": "catalog:",
+      "clsx": "catalog:",
+      "esbuild": "0.25.3",
+      "jiti": "catalog:",
+      "pinia": "catalog:",
+      "vue": "catalog:"
+    },
+    "neverBuiltDependencies": [
+      "canvas",
+      "node-gyp"
+    ]
+  }
+}
