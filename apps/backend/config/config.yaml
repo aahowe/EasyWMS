@@ -1,0 +1,53 @@
+# EasyWMS 配置文件示例
+
+# 服务器配置
+server:
+  port: 8080
+  mode: debug  # debug, release, test
+
+# 数据库配置
+database:
+  host: 120.25.179.240
+  port: 3306
+  username: easywms
+  password: 111111
+  dbname: easywms
+  charset: utf8mb4
+  parseTime: true
+  loc: Local
+  maxIdleConns: 10
+  maxOpenConns: 100
+
+# JWT配置
+jwt:
+  secret: your-secret-key-change-in-production
+  expireHours: 24
+
+# 日志配置
+log:
+  level: info  # debug, info, warn, error
+  filename: logs/easywms.log
+  maxSize: 100  # MB
+  maxBackups: 3
+  maxAge: 28  # days
+  compress: true
+
+# CORS配置
+cors:
+  allowOrigins:
+    - http://localhost:5666
+    - http://localhost:3000
+  allowMethods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - OPTIONS
+  allowHeaders:
+    - Origin
+    - Content-Type
+    - Authorization
+  exposeHeaders:
+    - Content-Length
+  allowCredentials: true
+  maxAge: 12  # hours

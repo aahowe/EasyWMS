@@ -70,7 +70,7 @@ async function bootstrap(namespace: string) {
     }
   });
 
-  app.mount('#backend');
+  app.mount('#app');
 }
 
 export { bootstrap };

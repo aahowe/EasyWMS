@@ -17,9 +17,6 @@ vendor/
 # Go workspace file
 go.work
 
-# Config files (keep example)
-config/config.yaml
-
 # Log files
 logs/
 *.log

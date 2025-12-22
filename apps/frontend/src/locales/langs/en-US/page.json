@@ -11,5 +11,12 @@
     "title": "Dashboard",
     "analytics": "Analytics",
     "workspace": "Workspace"
+  },
+  "common": {
+    "operation": "Operation",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "pleaseSelect": "Please Select",
+    "reset": "Reset"
   }
 }

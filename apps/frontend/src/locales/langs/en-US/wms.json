@@ -1,0 +1,96 @@
+{
+  "basicData": {
+    "title": "Basic Data"
+  },
+  "product": {
+    "title": "Product",
+    "listTitle": "Product List",
+    "code": "Product Code",
+    "name": "Product Name",
+    "category": "Category",
+    "specification": "Specification",
+    "unit": "Unit",
+    "price": "Price",
+    "costPrice": "Cost Price",
+    "barcode": "Barcode",
+    "status": "Status",
+    "minStock": "Min Stock",
+    "maxStock": "Max Stock",
+    "remark": "Remark",
+    "createTime": "Create Time",
+    "keyword": "Keyword",
+    "keywordPlaceholder": "Code/Name/Barcode"
+  },
+  "procurement": {
+    "title": "Procurement",
+    "menuTitle": "Procurement",
+    "listTitle": "Procurement List",
+    "orderNo": "Order No",
+    "supplierName": "Supplier",
+    "orderDate": "Order Date",
+    "expectedDate": "Expected Date",
+    "totalAmount": "Total Amount",
+    "status": "Status",
+    "remark": "Remark",
+    "createTime": "Create Time"
+  },
+  "inbound": {
+    "title": "Inbound",
+    "menuTitle": "Inbound",
+    "listTitle": "Inbound List",
+    "orderNo": "Order No",
+    "type": "Type",
+    "warehouseName": "Warehouse",
+    "sourceOrderNo": "Source Order No",
+    "totalQuantity": "Total Quantity",
+    "inboundDate": "Inbound Date",
+    "status": "Status",
+    "operatorName": "Operator",
+    "remark": "Remark",
+    "createTime": "Create Time"
+  },
+  "outbound": {
+    "title": "Outbound",
+    "menuTitle": "Outbound",
+    "listTitle": "Outbound List",
+    "orderNo": "Order No",
+    "type": "Type",
+    "warehouseName": "Warehouse",
+    "customerName": "Customer",
+    "totalQuantity": "Total Quantity",
+    "outboundDate": "Outbound Date",
+    "status": "Status",
+    "operatorName": "Operator",
+    "remark": "Remark",
+    "createTime": "Create Time"
+  },
+  "inventory": {
+    "menuTitle": "Inventory",
+    "stockListTitle": "Stock Query",
+    "productCode": "Product Code",
+    "productName": "Product Name",
+    "productNamePlaceholder": "Enter product name",
+    "warehouseName": "Warehouse",
+    "locationName": "Location",
+    "batchNo": "Batch No",
+    "quantity": "Quantity",
+    "availableQuantity": "Available Qty",
+    "lockedQuantity": "Locked Qty",
+    "costPrice": "Cost Price",
+    "expirationDate": "Expiration Date",
+    "updateTime": "Update Time",
+    "lowStockOnly": "Low Stock Only"
+  },
+  "inventoryCheck": {
+    "title": "Inventory Check",
+    "listTitle": "Inventory Check List",
+    "checkNo": "Check No",
+    "warehouseName": "Warehouse",
+    "checkDate": "Check Date",
+    "status": "Status",
+    "operatorName": "Operator",
+    "remark": "Remark",
+    "createTime": "Create Time"
+  }
+}
+

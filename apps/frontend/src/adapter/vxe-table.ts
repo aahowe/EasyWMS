@@ -67,4 +67,12 @@ setupVbenVxeTable({
 
 export { useVbenVxeGrid };
 
+export type OnActionClickParams<T = Record<string, any>> = {
+  code: string;
+  row: T;
+};
+export type OnActionClickFn<T = Record<string, any>> = (
+  params: OnActionClickParams<T>,
+) => void;
+
 export type * from '@vben/plugins/vxe-table';
