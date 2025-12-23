@@ -53,6 +53,7 @@
     "title": "出库单",
     "menuTitle": "出库管理",
     "listTitle": "出库单列表",
+    "applyTitle": "发起领用申请",
     "orderNo": "出库单号",
     "type": "出库类型",
     "warehouseName": "仓库",
@@ -62,7 +63,9 @@
     "status": "状态",
     "operatorName": "操作人",
     "remark": "备注",
-    "createTime": "创建时间"
+    "createTime": "创建时间",
+    "approve": "审核",
+    "execute": "执行出库"
   },
   "inventory": {
     "menuTitle": "库存管理",

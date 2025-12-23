@@ -153,12 +153,32 @@ export function useSearchSchema(): VbenFormSchema[] {
 }
 
 /**
+ * 权限选项接口
+ */
+interface PermissionOptions {
+  canEdit?: boolean;
+  canDelete?: boolean;
+}
+
+/**
  * 获取表格列配置
+ * @param onActionClick 操作按钮点击回调
+ * @param permissions 权限配置
  */
 export function useColumns(
   onActionClick?: OnActionClickFn<ProductApi.Product>,
+  permissions?: PermissionOptions,
 ): VxeTableGridOptions<ProductApi.Product>['columns'] {
-  return [
+  // 根据权限确定可用的操作按钮
+  const options: string[] = [];
+  if (permissions?.canEdit !== false) {
+    options.push('edit');
+  }
+  if (permissions?.canDelete !== false) {
+    options.push('delete');
+  }
+
+  const columns: VxeTableGridOptions<ProductApi.Product>['columns'] = [
     { title: '序号', type: 'seq', width: 60 },
     {
       field: 'code',
@@ -204,7 +224,11 @@ export function useColumns(
       title: $t('wms.product.createTime'),
       width: 180,
     },
-    {
+  ];
+
+  // 只有在有操作权限时才添加操作列
+  if (options.length > 0) {
+    columns.push({
       align: 'right',
       cellRender: {
         attrs: {
@@ -213,7 +237,7 @@ export function useColumns(
           onClick: onActionClick,
         },
         name: 'CellOperation',
-        options: ['edit', 'delete'],
+        options,
       },
       field: 'operation',
       fixed: 'right',
@@ -221,6 +245,8 @@ export function useColumns(
       showOverflow: false,
       title: $t('common.operation'),
       width: 150,
-    },
-  ];
+    });
+  }
+
+  return columns;
 }

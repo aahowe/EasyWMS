@@ -1,5 +1,8 @@
 <script lang="ts" setup>
-import type { OnActionClickParams, VxeTableGridOptions } from '#/adapter/vxe-table';
+import type {
+  OnActionClickParams,
+  VxeTableGridOptions,
+} from '#/adapter/vxe-table';
 import type { OutboundApi } from '#/api/wms/outbound';
 
 import { Page, useVbenModal } from '@vben/common-ui';
@@ -9,10 +12,18 @@ import { Button, message } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { deleteOutbound, getOutboundList } from '#/api/wms/outbound';
+import { usePermission } from '#/hooks';
 import { $t } from '#/locales';
 
 import { useColumns, useSearchSchema } from './data';
 import Form from './modules/form.vue';
+
+// 权限控制
+const {
+  canCreateOutbound,
+  canApproveOutbound,
+  canExecuteOutbound,
+} = usePermission();
 
 const [FormModal, formModalApi] = useVbenModal({
   connectedComponent: Form,
@@ -27,7 +38,7 @@ function onEdit(row: OutboundApi.Outbound) {
 }
 
 /**
- * 创建新出库单
+ * 创建新出库单（领用申请）
  */
 function onCreate() {
   formModalApi.setData(null).open();
@@ -56,9 +67,28 @@ function onDelete(row: OutboundApi.Outbound) {
 }
 
 /**
+ * 审核出库单
+ */
+function onApprove(row: OutboundApi.Outbound) {
+  // TODO: 实现审核逻辑
+  message.info(`审核出库单: ${row.orderNo}`);
+}
+
+/**
+ * 执行出库
+ */
+function onExecute(row: OutboundApi.Outbound) {
+  // TODO: 实现执行出库逻辑
+  message.info(`执行出库: ${row.orderNo}`);
+}
+
+/**
  * 表格操作按钮的回调函数
  */
-function onActionClick({ code, row }: OnActionClickParams<OutboundApi.Outbound>) {
+function onActionClick({
+  code,
+  row,
+}: OnActionClickParams<OutboundApi.Outbound>) {
   switch (code) {
     case 'delete': {
       onDelete(row);
@@ -66,6 +96,14 @@ function onActionClick({ code, row }: OnActionClickParams<OutboundApi.Outbound>)
     }
     case 'edit': {
       onEdit(row);
+      break;
+    }
+    case 'approve': {
+      onApprove(row);
+      break;
+    }
+    case 'execute': {
+      onExecute(row);
       break;
     }
   }
@@ -80,7 +118,10 @@ const [Grid, gridApi] = useVbenVxeGrid({
     fieldMappingTime: [['dateRange', ['startDate', 'endDate']]],
   },
   gridOptions: {
-    columns: useColumns(onActionClick),
+    columns: useColumns(onActionClick, {
+      canApprove: canApproveOutbound.value,
+      canExecute: canExecuteOutbound.value,
+    }),
     height: 'auto',
     keepSource: true,
     pagerConfig: {},
@@ -117,9 +158,9 @@ function refreshGrid() {
     <FormModal @success="refreshGrid" />
     <Grid :table-title="$t('wms.outbound.listTitle')">
       <template #toolbar-tools>
-        <Button type="primary" @click="onCreate">
+        <Button v-if="canCreateOutbound" type="primary" @click="onCreate">
           <Plus class="size-5" />
-          {{ $t('ui.actionTitle.create', [$t('wms.outbound.title')]) }}
+          {{ $t('wms.outbound.applyTitle') }}
         </Button>
       </template>
     </Grid>

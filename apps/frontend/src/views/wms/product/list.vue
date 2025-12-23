@@ -12,10 +12,14 @@ import { Button, message } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { deleteProduct, getProductList } from '#/api/wms/product';
+import { usePermission } from '#/hooks';
 import { $t } from '#/locales';
 
 import { useColumns, useSearchSchema } from './data';
 import Form from './modules/form.vue';
+
+// 权限控制
+const { canCreateProduct, canEditProduct, canDeleteProduct } = usePermission();
 
 const [FormModal, formModalApi] = useVbenModal({
   connectedComponent: Form,
@@ -61,7 +65,10 @@ function onDelete(row: ProductApi.Product) {
 /**
  * 表格操作按钮的回调函数
  */
-function onActionClick({ code, row }: OnActionClickParams<ProductApi.Product>) {
+function onActionClick({
+  code,
+  row,
+}: OnActionClickParams<ProductApi.Product>) {
   switch (code) {
     case 'delete': {
       onDelete(row);
@@ -82,7 +89,10 @@ const [Grid, gridApi] = useVbenVxeGrid({
     submitOnChange: false,
   },
   gridOptions: {
-    columns: useColumns(onActionClick),
+    columns: useColumns(onActionClick, {
+      canEdit: canEditProduct.value,
+      canDelete: canDeleteProduct.value,
+    }),
     height: 'auto',
     keepSource: true,
     pagerConfig: {},
@@ -119,7 +129,7 @@ function refreshGrid() {
     <FormModal @success="refreshGrid" />
     <Grid :table-title="$t('wms.product.listTitle')">
       <template #toolbar-tools>
-        <Button type="primary" @click="onCreate">
+        <Button v-if="canCreateProduct" type="primary" @click="onCreate">
           <Plus class="size-5" />
           {{ $t('ui.actionTitle.create', [$t('wms.product.title')]) }}
         </Button>

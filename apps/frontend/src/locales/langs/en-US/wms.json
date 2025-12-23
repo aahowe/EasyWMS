@@ -53,6 +53,7 @@
     "title": "Outbound",
     "menuTitle": "Outbound",
     "listTitle": "Outbound List",
+    "applyTitle": "Apply for Materials",
     "orderNo": "Order No",
     "type": "Type",
     "warehouseName": "Warehouse",
@@ -62,7 +63,9 @@
     "status": "Status",
     "operatorName": "Operator",
     "remark": "Remark",
-    "createTime": "Create Time"
+    "createTime": "Create Time",
+    "approve": "Approve",
+    "execute": "Execute"
   },
   "inventory": {
     "menuTitle": "Inventory",

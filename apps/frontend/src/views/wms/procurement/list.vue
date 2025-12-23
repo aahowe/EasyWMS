@@ -1,5 +1,8 @@
 <script lang="ts" setup>
-import type { OnActionClickParams, VxeTableGridOptions } from '#/adapter/vxe-table';
+import type {
+  OnActionClickParams,
+  VxeTableGridOptions,
+} from '#/adapter/vxe-table';
 import type { ProcurementApi } from '#/api/wms/procurement';
 
 import { Page, useVbenModal } from '@vben/common-ui';
@@ -8,11 +11,18 @@ import { Plus } from '@vben/icons';
 import { Button, message } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { deleteProcurement, getProcurementList } from '#/api/wms/procurement';
+import {
+  deleteProcurement,
+  getProcurementList,
+} from '#/api/wms/procurement';
+import { usePermission } from '#/hooks';
 import { $t } from '#/locales';
 
 import { useColumns, useSearchSchema } from './data';
 import Form from './modules/form.vue';
+
+// 权限控制
+const { canCreateProcurement, canApproveProcurement } = usePermission();
 
 const [FormModal, formModalApi] = useVbenModal({
   connectedComponent: Form,
@@ -56,6 +66,14 @@ function onDelete(row: ProcurementApi.Procurement) {
 }
 
 /**
+ * 审批采购单
+ */
+function onApprove(row: ProcurementApi.Procurement) {
+  // TODO: 实现审批逻辑
+  message.info(`审批采购单: ${row.orderNo}`);
+}
+
+/**
  * 表格操作按钮的回调函数
  */
 function onActionClick({
@@ -71,6 +89,10 @@ function onActionClick({
       onEdit(row);
       break;
     }
+    case 'approve': {
+      onApprove(row);
+      break;
+    }
   }
 }
 
@@ -83,7 +105,9 @@ const [Grid, gridApi] = useVbenVxeGrid({
     fieldMappingTime: [['dateRange', ['startDate', 'endDate']]],
   },
   gridOptions: {
-    columns: useColumns(onActionClick),
+    columns: useColumns(onActionClick, {
+      canApprove: canApproveProcurement.value,
+    }),
     height: 'auto',
     keepSource: true,
     pagerConfig: {},
@@ -120,7 +144,7 @@ function refreshGrid() {
     <FormModal @success="refreshGrid" />
     <Grid :table-title="$t('wms.procurement.listTitle')">
       <template #toolbar-tools>
-        <Button type="primary" @click="onCreate">
+        <Button v-if="canCreateProcurement" type="primary" @click="onCreate">
           <Plus class="size-5" />
           {{ $t('ui.actionTitle.create', [$t('wms.procurement.title')]) }}
         </Button>
