@@ -6,9 +6,6 @@
 # Stage 1: 构建阶段
 FROM node:20-alpine AS builder
 
-# 设置 npm 镜像加速（国内服务器）
-RUN npm config set registry https://registry.npmmirror.com
-
 # 安装 pnpm（使用 npm 安装，避免 corepack 网络问题）
 RUN npm install -g pnpm@10.22.0
 
@@ -27,18 +24,14 @@ COPY internal/ ./internal/
 # 复制 apps/frontend 目录
 COPY apps/frontend/ ./apps/frontend/
 
-# 安装依赖（使用国内镜像）
-RUN pnpm config set registry https://registry.npmmirror.com && \
-    pnpm install --frozen-lockfile
+# 安装依赖
+RUN pnpm install --frozen-lockfile
 
 # 构建前端
 RUN pnpm run build:frontend
 
 # Stage 2: 运行阶段
 FROM nginx:alpine
-
-# 使用国内 alpine 镜像源
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 # 安装时区数据
 RUN apk add --no-cache tzdata

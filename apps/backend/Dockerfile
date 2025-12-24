@@ -6,13 +6,10 @@
 # Stage 1: 构建阶段
 FROM golang:1.20-alpine AS builder
 
-# 使用国内 alpine 镜像源
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
-
 # 安装必要的构建工具
 RUN apk add --no-cache git ca-certificates tzdata
 
-# 设置 Go 代理（加速国内下载）
+# 设置 Go 代理（加速下载）
 ENV GOPROXY=https://goproxy.cn,direct
 ENV CGO_ENABLED=0
 ENV GOOS=linux
@@ -33,9 +30,6 @@ RUN go build -ldflags="-w -s" -o easywms ./cmd/server
 
 # Stage 2: 运行阶段
 FROM alpine:3.19
-
-# 使用国内 alpine 镜像源
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 # 安装必要的运行时依赖
 RUN apk add --no-cache ca-certificates tzdata
@@ -67,4 +61,3 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 
 # 启动命令
 CMD ["./easywms"]
-
