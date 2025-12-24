@@ -1,6 +1,9 @@
 package config
 
 import (
+	"os"
+	"strconv"
+
 	"github.com/spf13/viper"
 )
 
@@ -75,5 +78,56 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	// 支持环境变量覆盖配置（用于 Docker 部署）
+	overrideFromEnv(&config)
+
 	return &config, nil
+}
+
+// overrideFromEnv 从环境变量覆盖配置
+func overrideFromEnv(config *Config) {
+	// 数据库配置
+	if v := getEnv("DB_HOST"); v != "" {
+		config.Database.Host = v
+	}
+	if v := getEnvInt("DB_PORT"); v > 0 {
+		config.Database.Port = v
+	}
+	if v := getEnv("DB_USER"); v != "" {
+		config.Database.Username = v
+	}
+	if v := getEnv("DB_PASSWORD"); v != "" {
+		config.Database.Password = v
+	}
+	if v := getEnv("DB_NAME"); v != "" {
+		config.Database.DBName = v
+	}
+
+	// 服务器配置
+	if v := getEnv("SERVER_MODE"); v != "" {
+		config.Server.Mode = v
+	}
+	if v := getEnvInt("SERVER_PORT"); v > 0 {
+		config.Server.Port = v
+	}
+
+	// JWT 配置
+	if v := getEnv("JWT_SECRET"); v != "" {
+		config.JWT.Secret = v
+	}
+}
+
+// getEnv 获取环境变量
+func getEnv(key string) string {
+	return os.Getenv(key)
+}
+
+// getEnvInt 获取整数类型环境变量
+func getEnvInt(key string) int {
+	if v := os.Getenv(key); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			return i
+		}
+	}
+	return 0
 }

@@ -1,0 +1,55 @@
+# =============================================
+# EasyWMS Docker Compose 配置
+# 仅包含：前端 + 后端（数据库使用服务器现有 MySQL）
+# =============================================
+
+version: '3.8'
+
+services:
+  # 后端服务
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: easywms-backend
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    extra_hosts:
+      # 让容器内可以通过 host.docker.internal 访问宿主机
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # 使用默认配置文件
+      - ./apps/backend/config/config.yaml:/app/config/config.yaml:ro
+      # 日志持久化
+      - backend_logs:/app/logs
+    ports:
+      - "${BACKEND_PORT:-9527}:9527"
+    networks:
+      - easywms-network
+
+  # 前端服务
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    container_name: easywms-frontend
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "${FRONTEND_PORT:-9528}:80"
+    networks:
+      - easywms-network
+    depends_on:
+      - backend
+
+# 网络配置
+networks:
+  easywms-network:
+    driver: bridge
+
+# 数据卷配置
+volumes:
+  backend_logs:
+    driver: local

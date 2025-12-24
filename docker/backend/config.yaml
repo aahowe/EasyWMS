@@ -1,5 +1,7 @@
-# EasyWMS 配置文件
-# Docker 部署默认配置，拉取代码即可直接使用
+# =============================================
+# EasyWMS 后端 Docker 生产环境配置（备用）
+# 如需自定义配置可修改此文件并在 docker-compose.yml 中挂载
+# =============================================
 
 # 服务器配置
 server:
@@ -51,3 +53,4 @@ cors:
     - Content-Length
   allowCredentials: true
   maxAge: 12  # hours
+
