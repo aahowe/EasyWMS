@@ -8,7 +8,11 @@ import { Plus } from '@vben/icons';
 import { Button, message } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { deleteInventoryCheck, getInventoryCheckList } from '#/api/wms/inventory';
+import {
+  deleteInventoryCheck,
+  getInventoryCheck,
+  getInventoryCheckList,
+} from '#/api/wms/inventory';
 import { $t } from '#/locales';
 
 import { useColumns, useSearchSchema } from './data';
@@ -22,8 +26,10 @@ const [FormModal, formModalApi] = useVbenModal({
 /**
  * 编辑盘点单
  */
-function onEdit(row: InventoryApi.InventoryCheck) {
-  formModalApi.setData(row).open();
+async function onEdit(row: InventoryApi.InventoryCheck) {
+  // 获取详情（包含盘点明细）
+  const detail = await getInventoryCheck(row.id);
+  formModalApi.setData(detail).open();
 }
 
 /**

@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -10,14 +11,14 @@ import (
 
 // Supplier 供应商模型
 type Supplier struct {
-	ID        int64  `json:"id" gorm:"column:id;primaryKey"`
-	Name      string `json:"name" gorm:"column:name"`
-	Contact   string `json:"contact" gorm:"column:contact"`
-	Phone     string `json:"phone" gorm:"column:phone"`
-	Address   string `json:"address" gorm:"column:address"`
-	Status    int    `json:"status" gorm:"column:status"`
-	CreatedAt string `json:"createTime" gorm:"column:created_at"`
-	UpdatedAt string `json:"updateTime" gorm:"column:updated_at"`
+	ID        int64     `json:"id" gorm:"column:id;primaryKey"`
+	Name      string    `json:"name" gorm:"column:name"`
+	Contact   string    `json:"contact" gorm:"column:contact"`
+	Phone     string    `json:"phone" gorm:"column:phone"`
+	Address   string    `json:"address" gorm:"column:address"`
+	Status    int       `json:"status" gorm:"column:status"`
+	CreatedAt time.Time `json:"createTime" gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time `json:"updateTime" gorm:"column:updated_at;autoUpdateTime"`
 }
 
 func (Supplier) TableName() string {

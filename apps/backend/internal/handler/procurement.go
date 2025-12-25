@@ -12,16 +12,16 @@ import (
 
 // Procurement 采购单模型
 type Procurement struct {
-	ID           int64   `json:"id" gorm:"column:id;primaryKey"`
-	OrderNo      string  `json:"orderNo" gorm:"column:order_no"`
-	ApplicantID  int64   `json:"applicantId" gorm:"column:applicant_id"`
-	SupplierID   int64   `json:"supplierId" gorm:"column:supplier_id"`
-	Status       string  `json:"status" gorm:"column:status"`
-	Reason       string  `json:"reason" gorm:"column:reason"`
-	ExpectedDate string  `json:"expectedDate" gorm:"column:expected_date"`
-	CreatedAt    string  `json:"createTime" gorm:"column:created_at"`
-	UpdatedAt    string  `json:"updateTime" gorm:"column:updated_at"`
-	TotalAmount  float64 `json:"totalAmount" gorm:"-"`
+	ID           int64      `json:"id" gorm:"column:id;primaryKey"`
+	OrderNo      string     `json:"orderNo" gorm:"column:order_no"`
+	ApplicantID  int64      `json:"applicantId" gorm:"column:applicant_id"`
+	SupplierID   *int64     `json:"supplierId" gorm:"column:supplier_id"`
+	Status       string     `json:"status" gorm:"column:status"`
+	Reason       string     `json:"reason" gorm:"column:reason"`
+	ExpectedDate *time.Time `json:"expectedDate" gorm:"column:expected_date"`
+	CreatedAt    time.Time  `json:"createTime" gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt    time.Time  `json:"updateTime" gorm:"column:updated_at;autoUpdateTime"`
+	TotalAmount  float64    `json:"totalAmount" gorm:"-"`
 	// 关联字段
 	ApplicantName string `json:"applicantName" gorm:"-"`
 	SupplierName  string `json:"supplierName" gorm:"-"`
@@ -33,13 +33,13 @@ func (Procurement) TableName() string {
 
 // ProcurementItem 采购明细模型
 type ProcurementItem struct {
-	ID            int64   `json:"id" gorm:"column:id;primaryKey"`
-	ProcurementID int64   `json:"procurementId" gorm:"column:procurement_id"`
-	ProductID     int64   `json:"productId" gorm:"column:product_id"`
-	PlanQty       float64 `json:"quantity" gorm:"column:plan_qty"`
-	UnitPrice     float64 `json:"price" gorm:"column:unit_price"`
-	Amount        float64 `json:"amount" gorm:"-"`
-	CreatedAt     string  `json:"createTime" gorm:"column:created_at"`
+	ID            int64     `json:"id" gorm:"column:id;primaryKey"`
+	ProcurementID int64     `json:"procurementId" gorm:"column:procurement_id"`
+	ProductID     int64     `json:"productId" gorm:"column:product_id"`
+	PlanQty       float64   `json:"quantity" gorm:"column:plan_qty"`
+	UnitPrice     *float64  `json:"price" gorm:"column:unit_price"`
+	Amount        float64   `json:"amount" gorm:"-"`
+	CreatedAt     time.Time `json:"createTime" gorm:"column:created_at;autoCreateTime"`
 	// 关联字段
 	ProductName string `json:"productName" gorm:"-"`
 	ProductCode string `json:"productCode" gorm:"-"`
@@ -104,8 +104,8 @@ func (h *ProcurementHandler) GetProcurementList(c *gin.Context) {
 
 	for _, p := range procurements {
 		userIDs = append(userIDs, p.ApplicantID)
-		if p.SupplierID > 0 {
-			supplierIDs = append(supplierIDs, p.SupplierID)
+		if p.SupplierID != nil && *p.SupplierID > 0 {
+			supplierIDs = append(supplierIDs, *p.SupplierID)
 		}
 		procurementIDs = append(procurementIDs, p.ID)
 	}
@@ -153,7 +153,9 @@ func (h *ProcurementHandler) GetProcurementList(c *gin.Context) {
 	// 填充关联信息
 	for i := range procurements {
 		procurements[i].ApplicantName = userMap[procurements[i].ApplicantID]
-		procurements[i].SupplierName = supplierMap[procurements[i].SupplierID]
+		if procurements[i].SupplierID != nil {
+			procurements[i].SupplierName = supplierMap[*procurements[i].SupplierID]
+		}
 		procurements[i].TotalAmount = amountMap[procurements[i].ID]
 	}
 
@@ -199,7 +201,9 @@ func (h *ProcurementHandler) GetProcurement(c *gin.Context) {
 			items[i].ProductName = p.Name
 			items[i].ProductCode = p.SkuCode
 		}
-		items[i].Amount = items[i].PlanQty * items[i].UnitPrice
+		if items[i].UnitPrice != nil {
+			items[i].Amount = items[i].PlanQty * *items[i].UnitPrice
+		}
 	}
 
 	// 获取供应商和申请人信息
@@ -209,9 +213,11 @@ func (h *ProcurementHandler) GetProcurement(c *gin.Context) {
 	h.db.Table("sys_user").Where("id = ?", procurement.ApplicantID).First(&user)
 	procurement.ApplicantName = user.RealName
 
-	var supplier Supplier
-	h.db.First(&supplier, procurement.SupplierID)
-	procurement.SupplierName = supplier.Name
+	if procurement.SupplierID != nil {
+		var supplier Supplier
+		h.db.First(&supplier, *procurement.SupplierID)
+		procurement.SupplierName = supplier.Name
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
@@ -255,13 +261,27 @@ func (h *ProcurementHandler) CreateProcurement(c *gin.Context) {
 	// 生成单号
 	orderNo := fmt.Sprintf("PO%s%03d", time.Now().Format("20060102150405"), time.Now().Nanosecond()%1000)
 
+	// 解析日期
+	var expectedDate *time.Time
+	if req.ExpectedDate != "" {
+		if t, err := time.Parse("2006-01-02", req.ExpectedDate); err == nil {
+			expectedDate = &t
+		}
+	}
+
+	// 处理供应商ID
+	var supplierID *int64
+	if req.SupplierID > 0 {
+		supplierID = &req.SupplierID
+	}
+
 	procurement := Procurement{
 		OrderNo:      orderNo,
 		ApplicantID:  userID.(int64),
-		SupplierID:   req.SupplierID,
+		SupplierID:   supplierID,
 		Status:       "PENDING",
 		Reason:       req.Reason,
-		ExpectedDate: req.ExpectedDate,
+		ExpectedDate: expectedDate,
 	}
 
 	tx := h.db.Begin()
@@ -274,11 +294,12 @@ func (h *ProcurementHandler) CreateProcurement(c *gin.Context) {
 
 	// 创建明细
 	for _, item := range req.Items {
+		price := item.Price
 		procurementItem := ProcurementItem{
 			ProcurementID: procurement.ID,
 			ProductID:     item.ProductID,
 			PlanQty:       item.Quantity,
-			UnitPrice:     item.Price,
+			UnitPrice:     &price,
 		}
 		if err := tx.Create(&procurementItem).Error; err != nil {
 			tx.Rollback()
@@ -312,10 +333,20 @@ func (h *ProcurementHandler) UpdateProcurement(c *gin.Context) {
 	}
 
 	updates := map[string]interface{}{
-		"supplier_id":   req.SupplierID,
-		"status":        req.Status,
-		"reason":        req.Reason,
-		"expected_date": req.ExpectedDate,
+		"status": req.Status,
+		"reason": req.Reason,
+	}
+
+	// 处理供应商ID
+	if req.SupplierID > 0 {
+		updates["supplier_id"] = req.SupplierID
+	}
+
+	// 解析日期
+	if req.ExpectedDate != "" {
+		if t, err := time.Parse("2006-01-02", req.ExpectedDate); err == nil {
+			updates["expected_date"] = t
+		}
 	}
 
 	h.db.Model(&procurement).Updates(updates)

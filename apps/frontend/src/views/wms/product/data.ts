@@ -5,10 +5,12 @@ import type { OnActionClickFn } from '#/adapter/vxe-table';
 import type { ProductApi } from '#/api/wms/product';
 
 import { z } from '#/adapter/form';
+import { getCategoryList } from '#/api/wms/category';
 import { $t } from '#/locales';
 
 /**
  * 获取编辑表单的字段配置
+ * 字段与数据库 base_product 表保持一致
  */
 export function useSchema(): VbenFormSchema[] {
   return [
@@ -31,9 +33,23 @@ export function useSchema(): VbenFormSchema[] {
         .max(100, $t('ui.formRules.maxLength', [$t('wms.product.name'), 100])),
     },
     {
-      component: 'Input',
-      fieldName: 'category',
+      component: 'ApiSelect',
+      componentProps: {
+        api: async () => {
+          const res = await getCategoryList({ pageSize: 200 });
+          return res.items.map((item) => ({
+            label: item.name,
+            value: item.id,
+          }));
+        },
+        placeholder: $t('common.pleaseSelect'),
+        allowClear: true,
+      },
+      fieldName: 'categoryId',
       label: $t('wms.product.category'),
+      rules: z
+        .number()
+        .min(1, $t('ui.formRules.required', [$t('wms.product.category')])),
     },
     {
       component: 'Input',
@@ -52,26 +68,12 @@ export function useSchema(): VbenFormSchema[] {
       component: 'InputNumber',
       componentProps: {
         min: 0,
-        precision: 2,
+        precision: 4,
         class: 'w-full',
       },
-      fieldName: 'price',
-      label: $t('wms.product.price'),
-    },
-    {
-      component: 'InputNumber',
-      componentProps: {
-        min: 0,
-        precision: 2,
-        class: 'w-full',
-      },
-      fieldName: 'costPrice',
-      label: $t('wms.product.costPrice'),
-    },
-    {
-      component: 'Input',
-      fieldName: 'barcode',
-      label: $t('wms.product.barcode'),
+      defaultValue: 0,
+      fieldName: 'alertThreshold',
+      label: $t('wms.product.alertThreshold'),
     },
     {
       component: 'RadioGroup',
@@ -86,34 +88,6 @@ export function useSchema(): VbenFormSchema[] {
       defaultValue: 1,
       fieldName: 'status',
       label: $t('wms.product.status'),
-    },
-    {
-      component: 'InputNumber',
-      componentProps: {
-        min: 0,
-        class: 'w-full',
-      },
-      fieldName: 'minStock',
-      label: $t('wms.product.minStock'),
-    },
-    {
-      component: 'InputNumber',
-      componentProps: {
-        min: 0,
-        class: 'w-full',
-      },
-      fieldName: 'maxStock',
-      label: $t('wms.product.maxStock'),
-    },
-    {
-      component: 'Textarea',
-      componentProps: {
-        maxLength: 200,
-        rows: 3,
-        showCount: true,
-      },
-      fieldName: 'remark',
-      label: $t('wms.product.remark'),
     },
   ];
 }
@@ -132,7 +106,18 @@ export function useSearchSchema(): VbenFormSchema[] {
       },
     },
     {
-      component: 'Input',
+      component: 'ApiSelect',
+      componentProps: {
+        api: async () => {
+          const res = await getCategoryList({ pageSize: 200 });
+          return res.items.map((item) => ({
+            label: item.name,
+            value: item.id,
+          }));
+        },
+        placeholder: $t('common.pleaseSelect'),
+        allowClear: true,
+      },
       fieldName: 'category',
       label: $t('wms.product.category'),
     },
@@ -153,32 +138,14 @@ export function useSearchSchema(): VbenFormSchema[] {
 }
 
 /**
- * 权限选项接口
- */
-interface PermissionOptions {
-  canEdit?: boolean;
-  canDelete?: boolean;
-}
-
-/**
  * 获取表格列配置
+ * 字段与数据库 base_product 表保持一致
  * @param onActionClick 操作按钮点击回调
- * @param permissions 权限配置
  */
 export function useColumns(
   onActionClick?: OnActionClickFn<ProductApi.Product>,
-  permissions?: PermissionOptions,
 ): VxeTableGridOptions<ProductApi.Product>['columns'] {
-  // 根据权限确定可用的操作按钮
-  const options: string[] = [];
-  if (permissions?.canEdit !== false) {
-    options.push('edit');
-  }
-  if (permissions?.canDelete !== false) {
-    options.push('delete');
-  }
-
-  const columns: VxeTableGridOptions<ProductApi.Product>['columns'] = [
+  return [
     { title: '序号', type: 'seq', width: 60 },
     {
       field: 'code',
@@ -206,12 +173,14 @@ export function useColumns(
       width: 80,
     },
     {
-      field: 'price',
-      title: $t('wms.product.price'),
+      field: 'stockQty',
+      title: $t('wms.product.stockQty'),
       width: 100,
-      formatter: ({ cellValue }) => {
-        return cellValue ? `¥${cellValue.toFixed(2)}` : '-';
-      },
+    },
+    {
+      field: 'alertThreshold',
+      title: $t('wms.product.alertThreshold'),
+      width: 100,
     },
     {
       cellRender: { name: 'CellTag' },
@@ -224,11 +193,7 @@ export function useColumns(
       title: $t('wms.product.createTime'),
       width: 180,
     },
-  ];
-
-  // 只有在有操作权限时才添加操作列
-  if (options.length > 0) {
-    columns.push({
+    {
       align: 'right',
       cellRender: {
         attrs: {
@@ -237,7 +202,7 @@ export function useColumns(
           onClick: onActionClick,
         },
         name: 'CellOperation',
-        options,
+        options: ['edit', 'delete'],
       },
       field: 'operation',
       fixed: 'right',
@@ -245,8 +210,6 @@ export function useColumns(
       showOverflow: false,
       title: $t('common.operation'),
       width: 150,
-    });
-  }
-
-  return columns;
+    },
+  ];
 }

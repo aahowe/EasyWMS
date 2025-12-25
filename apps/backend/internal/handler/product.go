@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -10,17 +11,17 @@ import (
 
 // Product 产品模型
 type Product struct {
-	ID             int64   `json:"id" gorm:"column:id;primaryKey"`
-	CategoryID     int64   `json:"categoryId" gorm:"column:category_id"`
-	SkuCode        string  `json:"code" gorm:"column:sku_code"`
-	Name           string  `json:"name" gorm:"column:name"`
-	Specification  string  `json:"specification" gorm:"column:specification"`
-	Unit           string  `json:"unit" gorm:"column:unit"`
-	StockQty       float64 `json:"stockQty" gorm:"column:stock_qty"`
-	AlertThreshold float64 `json:"alertThreshold" gorm:"column:alert_threshold"`
-	Status         int     `json:"status" gorm:"column:status"`
-	CreatedAt      string  `json:"createTime" gorm:"column:created_at"`
-	UpdatedAt      string  `json:"updateTime" gorm:"column:updated_at"`
+	ID             int64     `json:"id" gorm:"column:id;primaryKey"`
+	CategoryID     int64     `json:"categoryId" gorm:"column:category_id"`
+	SkuCode        string    `json:"code" gorm:"column:sku_code"`
+	Name           string    `json:"name" gorm:"column:name"`
+	Specification  string    `json:"specification" gorm:"column:specification"`
+	Unit           string    `json:"unit" gorm:"column:unit"`
+	StockQty       float64   `json:"stockQty" gorm:"column:stock_qty"`
+	AlertThreshold float64   `json:"alertThreshold" gorm:"column:alert_threshold"`
+	Status         int       `json:"status" gorm:"column:status"`
+	CreatedAt      time.Time `json:"createTime" gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt      time.Time `json:"updateTime" gorm:"column:updated_at;autoUpdateTime"`
 	// 关联字段
 	CategoryName string `json:"category" gorm:"-"`
 }

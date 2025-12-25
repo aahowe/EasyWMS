@@ -9,7 +9,7 @@ export default defineConfig(async () => {
           '/api': {
             changeOrigin: true,
             // 直接连接后端API
-            target: 'http://localhost:8080',
+            target: 'http://localhost:9527',
             ws: true,
           },
         },

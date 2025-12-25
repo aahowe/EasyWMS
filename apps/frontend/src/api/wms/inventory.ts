@@ -35,34 +35,55 @@ export namespace InventoryApi {
     total: number;
   }
 
+  /**
+   * 盘点单接口
+   * 与数据库 biz_inventory_check 表字段对应
+   */
   export interface InventoryCheck {
     id: string;
+    /** 盘点单号 - 对应数据库 check_no */
     checkNo: string;
-    warehouseId: string;
-    warehouseName?: string;
-    status: 'cancelled' | 'checking' | 'completed' | 'draft';
-    checkDate: string;
-    operatorId?: string;
-    operatorName?: string;
+    /** 盘点人ID - 对应数据库 checker_id */
+    checkerId?: number;
+    /** 状态 - 对应数据库 status (CHECKING-盘点中, FINISHED-已调账结束) */
+    status?: 'cancelled' | 'checking' | 'completed' | 'draft';
+    /** 盘点日期 - 对应数据库 check_date */
+    checkDate?: string;
+    /** 备注 */
     remark?: string;
+    /** 仓库名称 - 前端虚拟字段 */
+    warehouseName?: string;
+    /** 操作员ID - 前端虚拟字段 */
+    operatorId?: string;
+    /** 操作员名称 - 前端虚拟字段 */
+    operatorName?: string;
+    /** 盘点明细 */
     items?: InventoryCheckItem[];
     createTime?: string;
     updateTime?: string;
     [key: string]: any;
   }
 
+  /**
+   * 盘点明细接口
+   * 与数据库 biz_inventory_check_item 表字段对应
+   */
   export interface InventoryCheckItem {
     id: string;
+    /** 盘点单ID */
     checkId: string;
+    /** 物资ID */
     productId: string;
+    /** 物资名称 - 关联字段 */
     productName?: string;
+    /** 物资编码 - 关联字段 */
     productCode?: string;
-    locationId?: string;
-    locationName?: string;
+    /** 账面数量 - 对应数据库 book_qty */
     systemQuantity: number;
+    /** 实盘数量 - 对应数据库 actual_qty */
     actualQuantity: number;
+    /** 盈亏数量 - 对应数据库 diff_qty */
     differenceQuantity: number;
-    remark?: string;
   }
 
   export interface InventoryCheckListParams {

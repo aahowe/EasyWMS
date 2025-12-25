@@ -3,23 +3,19 @@
     "title": "Basic Data"
   },
   "product": {
-    "title": "Product",
-    "listTitle": "Product List",
-    "code": "Product Code",
-    "name": "Product Name",
+    "title": "Material",
+    "listTitle": "Material List",
+    "code": "SKU Code",
+    "name": "Material Name",
     "category": "Category",
     "specification": "Specification",
     "unit": "Unit",
-    "price": "Price",
-    "costPrice": "Cost Price",
-    "barcode": "Barcode",
+    "stockQty": "Stock Qty",
+    "alertThreshold": "Alert Threshold",
     "status": "Status",
-    "minStock": "Min Stock",
-    "maxStock": "Max Stock",
-    "remark": "Remark",
     "createTime": "Create Time",
     "keyword": "Keyword",
-    "keywordPlaceholder": "Code/Name/Barcode"
+    "keywordPlaceholder": "Code/Name"
   },
   "procurement": {
     "title": "Procurement",

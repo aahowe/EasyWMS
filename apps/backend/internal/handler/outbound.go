@@ -12,17 +12,17 @@ import (
 
 // Outbound 出库单模型
 type Outbound struct {
-	ID           int64  `json:"id" gorm:"column:id;primaryKey"`
-	OutboundNo   string `json:"orderNo" gorm:"column:outbound_no"`
-	ApplicantID  int64  `json:"applicantId" gorm:"column:applicant_id"`
-	DeptID       int64  `json:"deptId" gorm:"column:dept_id"`
-	Status       string `json:"status" gorm:"column:status"`
-	Purpose      string `json:"purpose" gorm:"column:purpose"`
-	ReviewerID   *int64 `json:"reviewerId" gorm:"column:reviewer_id"`
-	ReviewTime   string `json:"reviewTime" gorm:"column:review_time"`
-	OutboundDate string `json:"outboundDate" gorm:"column:outbound_date"`
-	CreatedAt    string `json:"createTime" gorm:"column:created_at"`
-	UpdatedAt    string `json:"updateTime" gorm:"column:updated_at"`
+	ID           int64      `json:"id" gorm:"column:id;primaryKey"`
+	OutboundNo   string     `json:"orderNo" gorm:"column:outbound_no"`
+	ApplicantID  int64      `json:"applicantId" gorm:"column:applicant_id"`
+	DeptID       int64      `json:"deptId" gorm:"column:dept_id"`
+	Status       string     `json:"status" gorm:"column:status"`
+	Purpose      string     `json:"purpose" gorm:"column:purpose"`
+	ReviewerID   *int64     `json:"reviewerId" gorm:"column:reviewer_id"`
+	ReviewTime   *time.Time `json:"reviewTime" gorm:"column:review_time"`
+	OutboundDate *time.Time `json:"outboundDate" gorm:"column:outbound_date"`
+	CreatedAt    time.Time  `json:"createTime" gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt    time.Time  `json:"updateTime" gorm:"column:updated_at;autoUpdateTime"`
 	// 关联字段
 	ApplicantName string  `json:"applicantName" gorm:"-"`
 	DeptName      string  `json:"deptName" gorm:"-"`
@@ -39,12 +39,12 @@ func (Outbound) TableName() string {
 
 // OutboundItem 出库明细模型
 type OutboundItem struct {
-	ID         int64    `json:"id" gorm:"column:id;primaryKey"`
-	OutboundID int64    `json:"outboundId" gorm:"column:outbound_id"`
-	ProductID  int64    `json:"productId" gorm:"column:product_id"`
-	ApplyQty   float64  `json:"quantity" gorm:"column:apply_qty"`
-	ActualQty  *float64 `json:"pickedQuantity" gorm:"column:actual_qty"`
-	CreatedAt  string   `json:"createTime" gorm:"column:created_at"`
+	ID         int64     `json:"id" gorm:"column:id;primaryKey"`
+	OutboundID int64     `json:"outboundId" gorm:"column:outbound_id"`
+	ProductID  int64     `json:"productId" gorm:"column:product_id"`
+	ApplyQty   float64   `json:"quantity" gorm:"column:apply_qty"`
+	ActualQty  *float64  `json:"pickedQuantity" gorm:"column:actual_qty"`
+	CreatedAt  time.Time `json:"createTime" gorm:"column:created_at;autoCreateTime"`
 	// 关联字段
 	ProductName string `json:"productName" gorm:"-"`
 	ProductCode string `json:"productCode" gorm:"-"`
@@ -237,12 +237,27 @@ func (h *OutboundHandler) GetOutbound(c *gin.Context) {
 		}
 	}
 
+	// 状态转换
+	status := outbound.Status
+	switch outbound.Status {
+	case "PENDING":
+		status = "pending"
+	case "APPROVED":
+		status = "picking"
+	case "DONE":
+		status = "completed"
+	case "REJECT":
+		status = "cancelled"
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"data": gin.H{
 			"id":           outbound.ID,
 			"orderNo":      outbound.OutboundNo,
-			"status":       outbound.Status,
+			"applicantId":  outbound.ApplicantID,
+			"deptId":       outbound.DeptID,
+			"status":       status,
 			"purpose":      outbound.Purpose,
 			"outboundDate": outbound.OutboundDate,
 			"createTime":   outbound.CreatedAt,
@@ -380,7 +395,7 @@ func (h *OutboundHandler) UpdateOutbound(c *gin.Context) {
 			tx.Create(&stockLog)
 		}
 
-		now := time.Now().Format("2006-01-02 15:04:05")
+		now := time.Now()
 		tx.Model(&outbound).Updates(map[string]interface{}{
 			"status":        dbStatus,
 			"outbound_date": now,
@@ -388,7 +403,7 @@ func (h *OutboundHandler) UpdateOutbound(c *gin.Context) {
 		})
 	} else if dbStatus == "APPROVED" && outbound.Status == "PENDING" {
 		// 审批通过
-		now := time.Now().Format("2006-01-02 15:04:05")
+		now := time.Now()
 		tx.Model(&outbound).Updates(map[string]interface{}{
 			"status":      dbStatus,
 			"reviewer_id": userIDInt,

@@ -1,5 +1,8 @@
 <script lang="ts" setup>
-import type { OnActionClickParams, VxeTableGridOptions } from '#/adapter/vxe-table';
+import type {
+  OnActionClickParams,
+  VxeTableGridOptions,
+} from '#/adapter/vxe-table';
 import type { InboundApi } from '#/api/wms/inbound';
 
 import { Page, useVbenModal } from '@vben/common-ui';
@@ -8,7 +11,7 @@ import { Plus } from '@vben/icons';
 import { Button, message } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { deleteInbound, getInboundList } from '#/api/wms/inbound';
+import { deleteInbound, getInbound, getInboundList } from '#/api/wms/inbound';
 import { $t } from '#/locales';
 
 import { useColumns, useSearchSchema } from './data';
@@ -22,8 +25,10 @@ const [FormModal, formModalApi] = useVbenModal({
 /**
  * 编辑入库单
  */
-function onEdit(row: InboundApi.Inbound) {
-  formModalApi.setData(row).open();
+async function onEdit(row: InboundApi.Inbound) {
+  // 获取详情（包含入库明细）
+  const detail = await getInbound(row.id);
+  formModalApi.setData(detail).open();
 }
 
 /**

@@ -5,23 +5,15 @@ import type { OnActionClickFn } from '#/adapter/vxe-table';
 import type { OutboundApi } from '#/api/wms/outbound';
 
 import { z } from '#/adapter/form';
+import { getProductList } from '#/api/wms/product';
 import { $t } from '#/locales';
 
-// 出库类型选项
-export const typeOptions = [
-  { label: '销售出库', value: 'sale' },
-  { label: '退货出库', value: 'return' },
-  { label: '调拨出库', value: 'transfer' },
-  { label: '其他出库', value: 'other' },
-];
-
-// 出库状态选项
+// 出库状态选项 - 与数据库 biz_outbound 表 status 字段对应
 export const statusOptions = [
-  { label: '草稿', value: 'draft', color: 'default' },
-  { label: '待出库', value: 'pending', color: 'processing' },
-  { label: '拣货中', value: 'picking', color: 'warning' },
-  { label: '已完成', value: 'completed', color: 'success' },
-  { label: '已取消', value: 'cancelled', color: 'error' },
+  { label: '待审核', value: 'pending', color: 'processing' },
+  { label: '已审核', value: 'picking', color: 'warning' },
+  { label: '已领用', value: 'completed', color: 'success' },
+  { label: '已驳回', value: 'cancelled', color: 'error' },
 ];
 
 /**
@@ -41,52 +33,12 @@ export function useSchema(): VbenFormSchema[] {
     {
       component: 'Select',
       componentProps: {
-        options: typeOptions,
-      },
-      defaultValue: 'sale',
-      fieldName: 'type',
-      label: $t('wms.outbound.type'),
-      rules: z
-        .string()
-        .min(1, $t('ui.formRules.required', [$t('wms.outbound.type')])),
-    },
-    {
-      component: 'Input',
-      fieldName: 'warehouseName',
-      label: $t('wms.outbound.warehouseName'),
-      rules: z
-        .string()
-        .min(
-          1,
-          $t('ui.formRules.required', [$t('wms.outbound.warehouseName')]),
-        ),
-    },
-    {
-      component: 'Input',
-      fieldName: 'customerName',
-      label: $t('wms.outbound.customerName'),
-    },
-    {
-      component: 'DatePicker',
-      componentProps: {
-        class: 'w-full',
-        valueFormat: 'YYYY-MM-DD',
-      },
-      fieldName: 'outboundDate',
-      label: $t('wms.outbound.outboundDate'),
-      rules: z
-        .string()
-        .min(1, $t('ui.formRules.required', [$t('wms.outbound.outboundDate')])),
-    },
-    {
-      component: 'Select',
-      componentProps: {
         options: statusOptions.map((item) => ({
           label: item.label,
           value: item.value,
         })),
       },
-      defaultValue: 'draft',
+      defaultValue: 'pending',
       fieldName: 'status',
       label: $t('wms.outbound.status'),
     },
@@ -94,17 +46,34 @@ export function useSchema(): VbenFormSchema[] {
       component: 'Textarea',
       componentProps: {
         maxLength: 200,
-        rows: 3,
+        rows: 2,
         showCount: true,
       },
-      fieldName: 'remark',
-      label: $t('wms.outbound.remark'),
+      fieldName: 'purpose',
+      label: '领用用途',
+      rules: z.string().min(1, '请填写领用用途'),
     },
   ];
 }
 
 /**
+ * 获取产品选择器选项
+ */
+export async function getProductOptions() {
+  const res = await getProductList({ pageSize: 500, status: 1 });
+  return res.items.map((item) => ({
+    label: `${item.code} - ${item.name}`,
+    value: item.id,
+    code: item.code,
+    name: item.name,
+    unit: item.unit,
+    stockQty: (item as any).stockQty || 0,
+  }));
+}
+
+/**
  * 获取搜索表单的字段配置
+ * 字段与数据库 biz_outbound 表保持一致
  */
 export function useSearchSchema(): VbenFormSchema[] {
   return [
@@ -112,16 +81,6 @@ export function useSearchSchema(): VbenFormSchema[] {
       component: 'Input',
       fieldName: 'orderNo',
       label: $t('wms.outbound.orderNo'),
-    },
-    {
-      component: 'Select',
-      componentProps: {
-        allowClear: true,
-        options: typeOptions,
-        placeholder: $t('common.pleaseSelect'),
-      },
-      fieldName: 'type',
-      label: $t('wms.outbound.type'),
     },
     {
       component: 'Select',
@@ -142,13 +101,14 @@ export function useSearchSchema(): VbenFormSchema[] {
         valueFormat: 'YYYY-MM-DD',
       },
       fieldName: 'dateRange',
-      label: $t('wms.outbound.outboundDate'),
+      label: $t('wms.outbound.createTime'),
     },
   ];
 }
 
 /**
  * 获取表格列配置
+ * 字段与数据库 biz_outbound 表保持一致
  */
 export function useColumns(
   onActionClick?: OnActionClickFn<OutboundApi.Outbound>,
@@ -158,36 +118,27 @@ export function useColumns(
     {
       field: 'orderNo',
       title: $t('wms.outbound.orderNo'),
-      width: 160,
+      width: 180,
     },
     {
-      field: 'type',
-      title: $t('wms.outbound.type'),
-      width: 120,
-      formatter: ({ cellValue }) => {
-        const item = typeOptions.find((opt) => opt.value === cellValue);
-        return item?.label || cellValue;
-      },
+      field: 'applicantName',
+      title: '申请人',
+      width: 100,
     },
     {
-      field: 'warehouseName',
-      title: $t('wms.outbound.warehouseName'),
+      field: 'deptName',
+      title: '领用部门',
       minWidth: 120,
     },
     {
-      field: 'customerName',
-      title: $t('wms.outbound.customerName'),
-      minWidth: 120,
+      field: 'purpose',
+      title: '用途',
+      minWidth: 150,
     },
     {
       field: 'totalQuantity',
       title: $t('wms.outbound.totalQuantity'),
       width: 100,
-    },
-    {
-      field: 'outboundDate',
-      title: $t('wms.outbound.outboundDate'),
-      width: 120,
     },
     {
       cellRender: {
@@ -207,9 +158,9 @@ export function useColumns(
       width: 100,
     },
     {
-      field: 'operatorName',
-      title: $t('wms.outbound.operatorName'),
-      width: 100,
+      field: 'outboundDate',
+      title: $t('wms.outbound.outboundDate'),
+      width: 120,
     },
     {
       field: 'createTime',

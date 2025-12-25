@@ -3,23 +3,19 @@
     "title": "基础数据"
   },
   "product": {
-    "title": "产品",
-    "listTitle": "产品列表",
-    "code": "产品编码",
-    "name": "产品名称",
-    "category": "产品分类",
+    "title": "物资",
+    "listTitle": "物资档案",
+    "code": "SKU编码",
+    "name": "物资名称",
+    "category": "物资分类",
     "specification": "规格型号",
-    "unit": "单位",
-    "price": "销售价格",
-    "costPrice": "成本价格",
-    "barcode": "条形码",
+    "unit": "计量单位",
+    "stockQty": "库存数量",
+    "alertThreshold": "预警阈值",
     "status": "状态",
-    "minStock": "最低库存",
-    "maxStock": "最高库存",
-    "remark": "备注",
     "createTime": "创建时间",
     "keyword": "关键字",
-    "keywordPlaceholder": "编码/名称/条码"
+    "keywordPlaceholder": "编码/名称"
   },
   "procurement": {
     "title": "采购单",

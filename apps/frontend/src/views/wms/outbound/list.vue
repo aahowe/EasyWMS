@@ -11,7 +11,11 @@ import { Plus } from '@vben/icons';
 import { Button, message } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { deleteOutbound, getOutboundList } from '#/api/wms/outbound';
+import {
+  deleteOutbound,
+  getOutbound,
+  getOutboundList,
+} from '#/api/wms/outbound';
 import { usePermission } from '#/hooks';
 import { $t } from '#/locales';
 
@@ -19,11 +23,7 @@ import { useColumns, useSearchSchema } from './data';
 import Form from './modules/form.vue';
 
 // 权限控制
-const {
-  canCreateOutbound,
-  canApproveOutbound,
-  canExecuteOutbound,
-} = usePermission();
+const { canCreateOutbound } = usePermission();
 
 const [FormModal, formModalApi] = useVbenModal({
   connectedComponent: Form,
@@ -33,8 +33,10 @@ const [FormModal, formModalApi] = useVbenModal({
 /**
  * 编辑出库单
  */
-function onEdit(row: OutboundApi.Outbound) {
-  formModalApi.setData(row).open();
+async function onEdit(row: OutboundApi.Outbound) {
+  // 获取详情（包含出库明细）
+  const detail = await getOutbound(row.id);
+  formModalApi.setData(detail).open();
 }
 
 /**
@@ -90,16 +92,16 @@ function onActionClick({
   row,
 }: OnActionClickParams<OutboundApi.Outbound>) {
   switch (code) {
+    case 'approve': {
+      onApprove(row);
+      break;
+    }
     case 'delete': {
       onDelete(row);
       break;
     }
     case 'edit': {
       onEdit(row);
-      break;
-    }
-    case 'approve': {
-      onApprove(row);
       break;
     }
     case 'execute': {
@@ -118,10 +120,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
     fieldMappingTime: [['dateRange', ['startDate', 'endDate']]],
   },
   gridOptions: {
-    columns: useColumns(onActionClick, {
-      canApprove: canApproveOutbound.value,
-      canExecute: canExecuteOutbound.value,
-    }),
+    columns: useColumns(onActionClick),
     height: 'auto',
     keepSource: true,
     pagerConfig: {},

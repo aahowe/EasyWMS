@@ -4,27 +4,25 @@ import type { VbenFormSchema } from '#/adapter/form';
 import type { OnActionClickFn } from '#/adapter/vxe-table';
 import type { InboundApi } from '#/api/wms/inbound';
 
-import { z } from '#/adapter/form';
+import { getProcurementList } from '#/api/wms/procurement';
+import { getProductList } from '#/api/wms/product';
 import { $t } from '#/locales';
 
-// 入库类型选项
+// 入库类型选项 - 用于前端显示
 export const typeOptions = [
   { label: '采购入库', value: 'purchase' },
-  { label: '退货入库', value: 'return' },
-  { label: '调拨入库', value: 'transfer' },
   { label: '其他入库', value: 'other' },
 ];
 
-// 入库状态选项
+// 入库状态选项 - 与数据库 biz_inbound 表 status 字段对应 (0-草稿, 1-已完成)
 export const statusOptions = [
   { label: '草稿', value: 'draft', color: 'default' },
-  { label: '待入库', value: 'pending', color: 'processing' },
   { label: '已完成', value: 'completed', color: 'success' },
-  { label: '已取消', value: 'cancelled', color: 'error' },
 ];
 
 /**
  * 获取编辑表单的字段配置
+ * 字段与数据库 biz_inbound 表保持一致（除日期外均可编辑）
  */
 export function useSchema(): VbenFormSchema[] {
   return [
@@ -38,41 +36,42 @@ export function useSchema(): VbenFormSchema[] {
       },
     },
     {
-      component: 'Select',
+      component: 'ApiSelect',
       componentProps: {
-        options: typeOptions,
+        api: async () => {
+          // 获取已审核、已下单、已完成的采购单作为来源单
+          const res = await getProcurementList({
+            pageSize: 500,
+          });
+          // 过滤出可用的采购单状态：APPROVED, ORDERED, DONE
+          const validStatuses = new Set(['APPROVED', 'DONE', 'ORDERED']);
+          return res.items
+            .filter((item) => validStatuses.has(item.status || ''))
+            .map((item) => ({
+              label: `${item.orderNo} - ${item.supplierName || '未指定供应商'}`,
+              value: item.id,
+            }));
+        },
+        placeholder: '选择采购单（可选）',
+        allowClear: true,
+        showSearch: true,
+        filterOption: (input: string, option: any) =>
+          option.label.toLowerCase().includes(input.toLowerCase()),
       },
-      defaultValue: 'purchase',
-      fieldName: 'type',
-      label: $t('wms.inbound.type'),
-      rules: z
-        .string()
-        .min(1, $t('ui.formRules.required', [$t('wms.inbound.type')])),
-    },
-    {
-      component: 'Input',
-      fieldName: 'warehouseName',
-      label: $t('wms.inbound.warehouseName'),
-      rules: z
-        .string()
-        .min(1, $t('ui.formRules.required', [$t('wms.inbound.warehouseName')])),
-    },
-    {
-      component: 'Input',
-      fieldName: 'sourceOrderNo',
+      fieldName: 'sourceId',
       label: $t('wms.inbound.sourceOrderNo'),
     },
     {
-      component: 'DatePicker',
+      component: 'Select',
       componentProps: {
-        class: 'w-full',
-        valueFormat: 'YYYY-MM-DD',
+        options: [
+          { label: '正常入库', value: 0 },
+          { label: '暂估入库', value: 1 },
+        ],
       },
-      fieldName: 'inboundDate',
-      label: $t('wms.inbound.inboundDate'),
-      rules: z
-        .string()
-        .min(1, $t('ui.formRules.required', [$t('wms.inbound.inboundDate')])),
+      defaultValue: 0,
+      fieldName: 'isTemporary',
+      label: '入库方式',
     },
     {
       component: 'Select',
@@ -90,7 +89,7 @@ export function useSchema(): VbenFormSchema[] {
       component: 'Textarea',
       componentProps: {
         maxLength: 200,
-        rows: 3,
+        rows: 2,
         showCount: true,
       },
       fieldName: 'remark',
@@ -100,7 +99,22 @@ export function useSchema(): VbenFormSchema[] {
 }
 
 /**
+ * 获取产品选择器选项
+ */
+export async function getProductOptions() {
+  const res = await getProductList({ pageSize: 500, status: 1 });
+  return res.items.map((item) => ({
+    label: `${item.code} - ${item.name}`,
+    value: item.id,
+    code: item.code,
+    name: item.name,
+    unit: item.unit,
+  }));
+}
+
+/**
  * 获取搜索表单的字段配置
+ * 字段与数据库 biz_inbound 表保持一致
  */
 export function useSearchSchema(): VbenFormSchema[] {
   return [
@@ -108,16 +122,6 @@ export function useSearchSchema(): VbenFormSchema[] {
       component: 'Input',
       fieldName: 'orderNo',
       label: $t('wms.inbound.orderNo'),
-    },
-    {
-      component: 'Select',
-      componentProps: {
-        allowClear: true,
-        options: typeOptions,
-        placeholder: $t('common.pleaseSelect'),
-      },
-      fieldName: 'type',
-      label: $t('wms.inbound.type'),
     },
     {
       component: 'Select',
@@ -138,13 +142,14 @@ export function useSearchSchema(): VbenFormSchema[] {
         valueFormat: 'YYYY-MM-DD',
       },
       fieldName: 'dateRange',
-      label: $t('wms.inbound.inboundDate'),
+      label: $t('wms.inbound.createTime'),
     },
   ];
 }
 
 /**
  * 获取表格列配置
+ * 字段与数据库 biz_inbound 表保持一致
  */
 export function useColumns(
   onActionClick?: OnActionClickFn<InboundApi.Inbound>,
@@ -154,26 +159,24 @@ export function useColumns(
     {
       field: 'orderNo',
       title: $t('wms.inbound.orderNo'),
-      width: 160,
+      width: 180,
     },
     {
       field: 'type',
       title: $t('wms.inbound.type'),
-      width: 120,
+      width: 100,
       formatter: ({ cellValue }) => {
         const item = typeOptions.find((opt) => opt.value === cellValue);
-        return item?.label || cellValue;
+        return item?.label || '其他入库';
       },
-    },
-    {
-      field: 'warehouseName',
-      title: $t('wms.inbound.warehouseName'),
-      minWidth: 120,
     },
     {
       field: 'sourceOrderNo',
       title: $t('wms.inbound.sourceOrderNo'),
-      width: 160,
+      width: 180,
+      formatter: ({ cellValue }) => {
+        return cellValue || '-';
+      },
     },
     {
       field: 'totalQuantity',
@@ -181,25 +184,35 @@ export function useColumns(
       width: 100,
     },
     {
-      field: 'inboundDate',
-      title: $t('wms.inbound.inboundDate'),
-      width: 120,
-    },
-    {
       cellRender: {
         name: 'CellTag',
         props: {
           colors: {
             draft: 'default',
-            pending: 'processing',
             completed: 'success',
-            cancelled: 'error',
           },
         },
       },
       field: 'status',
       title: $t('wms.inbound.status'),
       width: 100,
+    },
+    {
+      field: 'inboundDate',
+      title: $t('wms.inbound.inboundDate'),
+      width: 180,
+      formatter: ({ cellValue }) => {
+        if (!cellValue) return '-';
+        // 格式化日期时间
+        const date = new Date(cellValue);
+        return date.toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      },
     },
     {
       field: 'operatorName',

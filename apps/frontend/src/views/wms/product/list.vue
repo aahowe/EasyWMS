@@ -19,7 +19,7 @@ import { useColumns, useSearchSchema } from './data';
 import Form from './modules/form.vue';
 
 // 权限控制
-const { canCreateProduct, canEditProduct, canDeleteProduct } = usePermission();
+const { canCreateProduct } = usePermission();
 
 const [FormModal, formModalApi] = useVbenModal({
   connectedComponent: Form,
@@ -89,10 +89,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
     submitOnChange: false,
   },
   gridOptions: {
-    columns: useColumns(onActionClick, {
-      canEdit: canEditProduct.value,
-      canDelete: canDeleteProduct.value,
-    }),
+    columns: useColumns(onActionClick),
     height: 'auto',
     keepSource: true,
     pagerConfig: {},

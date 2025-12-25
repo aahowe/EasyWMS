@@ -1,20 +1,30 @@
 import { requestClient } from '#/api/request';
 
 export namespace ProductApi {
+  /**
+   * 物资档案接口
+   * 与数据库 base_product 表字段对应
+   */
   export interface Product {
     id: string;
+    /** SKU编码 - 对应数据库 sku_code */
     code: string;
+    /** 物资名称 */
     name: string;
+    /** 分类ID - 对应数据库 category_id */
+    categoryId?: number;
+    /** 分类名称 - 关联字段 */
     category?: string;
+    /** 规格型号 */
     specification?: string;
+    /** 计量单位 */
     unit: string;
-    price?: number;
-    costPrice?: number;
-    barcode?: string;
+    /** 实时库存数量 - 对应数据库 stock_qty */
+    stockQty?: number;
+    /** 预警阈值 - 对应数据库 alert_threshold */
+    alertThreshold?: number;
+    /** 状态: 1-启用, 0-停用 */
     status: 0 | 1;
-    minStock?: number;
-    maxStock?: number;
-    remark?: string;
     createTime?: string;
     updateTime?: string;
     [key: string]: any;

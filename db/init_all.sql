@@ -274,31 +274,7 @@ CREATE TABLE `biz_inventory_check_item` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='盘点差异表';
 
 -- =============================================
--- 第三部分: 添加外键约束
--- =============================================
-ALTER TABLE `sys_user` ADD CONSTRAINT `fk_user_dept` FOREIGN KEY (`dept_id`) REFERENCES `base_department` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `base_product` ADD CONSTRAINT `fk_product_category` FOREIGN KEY (`category_id`) REFERENCES `base_category` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_procurement` ADD CONSTRAINT `fk_procurement_applicant` FOREIGN KEY (`applicant_id`) REFERENCES `sys_user` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_procurement` ADD CONSTRAINT `fk_procurement_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `base_supplier` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_procurement_item` ADD CONSTRAINT `fk_procurement_item_procurement` FOREIGN KEY (`procurement_id`) REFERENCES `biz_procurement` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `biz_procurement_item` ADD CONSTRAINT `fk_procurement_item_product` FOREIGN KEY (`product_id`) REFERENCES `base_product` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_inbound` ADD CONSTRAINT `fk_inbound_source` FOREIGN KEY (`source_id`) REFERENCES `biz_procurement` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_inbound` ADD CONSTRAINT `fk_inbound_warehouse_user` FOREIGN KEY (`warehouse_user_id`) REFERENCES `sys_user` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_inbound_item` ADD CONSTRAINT `fk_inbound_item_inbound` FOREIGN KEY (`inbound_id`) REFERENCES `biz_inbound` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `biz_inbound_item` ADD CONSTRAINT `fk_inbound_item_product` FOREIGN KEY (`product_id`) REFERENCES `base_product` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_outbound` ADD CONSTRAINT `fk_outbound_applicant` FOREIGN KEY (`applicant_id`) REFERENCES `sys_user` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_outbound` ADD CONSTRAINT `fk_outbound_dept` FOREIGN KEY (`dept_id`) REFERENCES `base_department` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_outbound` ADD CONSTRAINT `fk_outbound_reviewer` FOREIGN KEY (`reviewer_id`) REFERENCES `sys_user` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_outbound_item` ADD CONSTRAINT `fk_outbound_item_outbound` FOREIGN KEY (`outbound_id`) REFERENCES `biz_outbound` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `biz_outbound_item` ADD CONSTRAINT `fk_outbound_item_product` FOREIGN KEY (`product_id`) REFERENCES `base_product` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_stock_log` ADD CONSTRAINT `fk_stock_log_product` FOREIGN KEY (`product_id`) REFERENCES `base_product` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_stock_log` ADD CONSTRAINT `fk_stock_log_operator` FOREIGN KEY (`operator_id`) REFERENCES `sys_user` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_inventory_check` ADD CONSTRAINT `fk_inventory_check_checker` FOREIGN KEY (`checker_id`) REFERENCES `sys_user` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE `biz_inventory_check_item` ADD CONSTRAINT `fk_inventory_check_item_check` FOREIGN KEY (`check_id`) REFERENCES `biz_inventory_check` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `biz_inventory_check_item` ADD CONSTRAINT `fk_inventory_check_item_product` FOREIGN KEY (`product_id`) REFERENCES `base_product` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- =============================================
--- 第四部分: 插入权限数据
+-- 第三部分: 插入权限数据
 -- =============================================
 INSERT INTO `sys_permission` (`code`, `name`, `description`, `module`) VALUES
 ('BASIC_VIEW', '基础数据查看', '查看物资档案、供应商等', 'basic'),
@@ -357,7 +333,7 @@ INSERT INTO `sys_role_permission` (`role_code`, `permission_code`) VALUES
 ('STAFF', 'OUTBOUND_CREATE'), ('STAFF', 'INVENTORY_VIEW'), ('STAFF', 'DASHBOARD_VIEW');
 
 -- =============================================
--- 第五部分: 插入基础数据
+-- 第四部分: 插入基础数据
 -- =============================================
 
 -- 部门数据 (25个部门)
@@ -439,7 +415,7 @@ INSERT INTO `base_category` (`id`, `name`, `parent_id`) VALUES
 (18, '空调设备', 5), (19, '照明设备', 5), (20, '饮水设备', 5);
 
 -- =============================================
--- 第六部分: 物资档案数据 (80个产品)
+-- 第五部分: 物资档案数据 (80个产品)
 -- =============================================
 INSERT INTO `base_product` (`id`, `category_id`, `sku_code`, `name`, `specification`, `unit`, `stock_qty`, `alert_threshold`, `status`) VALUES
 -- 文具类 (1-15)
@@ -562,7 +538,7 @@ INSERT INTO `base_product` (`id`, `category_id`, `sku_code`, `name`, `specificat
 (100, 20, 'SKU-YS-002', '电热水壶', '美的 1.7L 不锈钢', '个', 65.0000, 15.0000, 1);
 
 -- =============================================
--- 第七部分: 采购订单数据 (30条采购单)
+-- 第六部分: 采购订单数据 (30条采购单)
 -- =============================================
 INSERT INTO `biz_procurement` (`id`, `order_no`, `applicant_id`, `supplier_id`, `status`, `reason`, `expected_date`, `created_at`) VALUES
 -- 2024年10月份采购单 (已完成)
@@ -601,7 +577,7 @@ INSERT INTO `biz_procurement` (`id`, `order_no`, `applicant_id`, `supplier_id`, 
 (30, 'PO20241128001', 4, 7, 'DONE', 'TP-LINK网络设备采购', '2024-12-08', '2024-11-28 10:30:00');
 
 -- =============================================
--- 第八部分: 采购明细数据 (约100条)
+-- 第七部分: 采购明细数据 (约100条)
 -- =============================================
 INSERT INTO `biz_procurement_item` (`id`, `procurement_id`, `product_id`, `plan_qty`, `unit_price`) VALUES
 -- PO20241001001 文具采购
@@ -662,7 +638,7 @@ INSERT INTO `biz_procurement_item` (`id`, `procurement_id`, `product_id`, `plan_
 (82, 30, 59, 15.0000, 280.00), (83, 30, 61, 20.0000, 120.00);
 
 -- =============================================
--- 第九部分: 入库单数据 (25条)
+-- 第八部分: 入库单数据 (25条)
 -- =============================================
 INSERT INTO `biz_inbound` (`id`, `inbound_no`, `source_id`, `is_temporary`, `status`, `inbound_date`, `warehouse_user_id`, `remark`, `created_at`) VALUES
 -- 10月入库
@@ -698,7 +674,7 @@ INSERT INTO `biz_inbound` (`id`, `inbound_no`, `source_id`, `is_temporary`, `sta
 (25, 'IN20241203001', 30, 0, 1, '2024-12-03 11:30:00', 8, '采购入库-TP-LINK设备', '2024-12-03 10:30:00');
 
 -- =============================================
--- 第十部分: 入库明细数据 (约80条)
+-- 第九部分: 入库明细数据 (约80条)
 -- =============================================
 INSERT INTO `biz_inbound_item` (`id`, `inbound_id`, `product_id`, `actual_qty`, `location`) VALUES
 -- IN20241005001
@@ -749,7 +725,7 @@ INSERT INTO `biz_inbound_item` (`id`, `inbound_id`, `product_id`, `actual_qty`, 
 (72, 25, 59, 15.0000, 'B-05-01'), (73, 25, 61, 20.0000, 'B-05-05');
 
 -- =============================================
--- 第十一部分: 出库单数据 (35条)
+-- 第十部分: 出库单数据 (35条)
 -- =============================================
 INSERT INTO `biz_outbound` (`id`, `outbound_no`, `applicant_id`, `dept_id`, `status`, `purpose`, `reviewer_id`, `review_time`, `outbound_date`, `created_at`) VALUES
 -- 10月份出库 (已完成)
@@ -796,7 +772,7 @@ INSERT INTO `biz_outbound` (`id`, `outbound_no`, `applicant_id`, `dept_id`, `sta
 (35, 'OUT20241130001', 25, 8, 'DONE', '市场部年终活动物资', 10, '2024-11-30 15:00:00', '2024-11-30 16:30:00', '2024-11-30 14:30:00');
 
 -- =============================================
--- 第十二部分: 出库明细数据 (约100条)
+-- 第十一部分: 出库明细数据 (约100条)
 -- =============================================
 INSERT INTO `biz_outbound_item` (`id`, `outbound_id`, `product_id`, `apply_qty`, `actual_qty`) VALUES
 -- OUT20241008001
@@ -868,7 +844,7 @@ INSERT INTO `biz_outbound_item` (`id`, `outbound_id`, `product_id`, `apply_qty`,
 (90, 35, 13, 30.0000, 30.0000), (91, 35, 88, 60.0000, 60.0000);
 
 -- =============================================
--- 第十三部分: 库存流水数据 (约150条)
+-- 第十二部分: 库存流水数据 (约150条)
 -- =============================================
 INSERT INTO `biz_stock_log` (`product_id`, `type`, `change_qty`, `snapshot_qty`, `related_no`, `operator_id`, `created_at`) VALUES
 -- 期初库存录入 (2024年10月1日)
@@ -1014,7 +990,7 @@ INSERT INTO `biz_stock_log` (`product_id`, `type`, `change_qty`, `snapshot_qty`,
 (65, 'ADJUST', 2.0000, 227.0000, 'CHK20241215001', 8, '2024-12-15 18:00:00');
 
 -- =============================================
--- 第十四部分: 盘点单数据 (8条)
+-- 第十三部分: 盘点单数据 (8条)
 -- =============================================
 INSERT INTO `biz_inventory_check` (`id`, `check_no`, `status`, `check_date`, `checker_id`, `remark`, `created_at`) VALUES
 (1, 'CHK20241015001', 'FINISHED', '2024-10-15', 7, '10月中旬定期盘点-办公用品区', '2024-10-15 08:00:00'),
@@ -1027,7 +1003,7 @@ INSERT INTO `biz_inventory_check` (`id`, `check_no`, `status`, `check_date`, `ch
 (8, 'CHK20241222001', 'CHECKING', '2024-12-22', 8, '年终全面盘点-C区', '2024-12-22 08:00:00');
 
 -- =============================================
--- 第十五部分: 盘点明细数据 (约50条)
+-- 第十四部分: 盘点明细数据 (约50条)
 -- =============================================
 INSERT INTO `biz_inventory_check_item` (`id`, `check_id`, `product_id`, `book_qty`, `actual_qty`, `diff_qty`) VALUES
 -- CHK20241015001

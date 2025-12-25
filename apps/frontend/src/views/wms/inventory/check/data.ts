@@ -4,15 +4,13 @@ import type { VbenFormSchema } from '#/adapter/form';
 import type { OnActionClickFn } from '#/adapter/vxe-table';
 import type { InventoryApi } from '#/api/wms/inventory';
 
-import { z } from '#/adapter/form';
+import { getProductList } from '#/api/wms/product';
 import { $t } from '#/locales';
 
-// 盘点状态选项
+// 盘点状态选项 - 与数据库 biz_inventory_check 表 status 字段对应
 export const statusOptions = [
-  { label: '草稿', value: 'draft', color: 'default' },
   { label: '盘点中', value: 'checking', color: 'processing' },
   { label: '已完成', value: 'completed', color: 'success' },
-  { label: '已取消', value: 'cancelled', color: 'error' },
 ];
 
 /**
@@ -30,32 +28,6 @@ export function useSchema(): VbenFormSchema[] {
       },
     },
     {
-      component: 'Input',
-      fieldName: 'warehouseName',
-      label: $t('wms.inventoryCheck.warehouseName'),
-      rules: z
-        .string()
-        .min(
-          1,
-          $t('ui.formRules.required', [$t('wms.inventoryCheck.warehouseName')]),
-        ),
-    },
-    {
-      component: 'DatePicker',
-      componentProps: {
-        class: 'w-full',
-        valueFormat: 'YYYY-MM-DD',
-      },
-      fieldName: 'checkDate',
-      label: $t('wms.inventoryCheck.checkDate'),
-      rules: z
-        .string()
-        .min(
-          1,
-          $t('ui.formRules.required', [$t('wms.inventoryCheck.checkDate')]),
-        ),
-    },
-    {
       component: 'Select',
       componentProps: {
         options: statusOptions.map((item) => ({
@@ -63,7 +35,7 @@ export function useSchema(): VbenFormSchema[] {
           value: item.value,
         })),
       },
-      defaultValue: 'draft',
+      defaultValue: 'checking',
       fieldName: 'status',
       label: $t('wms.inventoryCheck.status'),
     },
@@ -71,13 +43,28 @@ export function useSchema(): VbenFormSchema[] {
       component: 'Textarea',
       componentProps: {
         maxLength: 200,
-        rows: 3,
+        rows: 2,
         showCount: true,
       },
       fieldName: 'remark',
       label: $t('wms.inventoryCheck.remark'),
     },
   ];
+}
+
+/**
+ * 获取产品选择器选项（包含库存信息）
+ */
+export async function getProductOptions() {
+  const res = await getProductList({ pageSize: 500, status: 1 });
+  return res.items.map((item) => ({
+    label: `${item.code} - ${item.name}`,
+    value: item.id,
+    code: item.code,
+    name: item.name,
+    unit: item.unit,
+    stockQty: (item as any).stockQty || 0,
+  }));
 }
 
 /**
@@ -116,6 +103,7 @@ export function useSearchSchema(): VbenFormSchema[] {
 
 /**
  * 获取表格列配置
+ * 字段与数据库 biz_inventory_check 表保持一致
  */
 export function useColumns(
   onActionClick?: OnActionClickFn<InventoryApi.InventoryCheck>,
@@ -125,27 +113,15 @@ export function useColumns(
     {
       field: 'checkNo',
       title: $t('wms.inventoryCheck.checkNo'),
-      width: 160,
-    },
-    {
-      field: 'warehouseName',
-      title: $t('wms.inventoryCheck.warehouseName'),
-      minWidth: 120,
-    },
-    {
-      field: 'checkDate',
-      title: $t('wms.inventoryCheck.checkDate'),
-      width: 120,
+      width: 180,
     },
     {
       cellRender: {
         name: 'CellTag',
         props: {
           colors: {
-            draft: 'default',
             checking: 'processing',
             completed: 'success',
-            cancelled: 'error',
           },
         },
       },
@@ -154,9 +130,19 @@ export function useColumns(
       width: 100,
     },
     {
+      field: 'checkDate',
+      title: $t('wms.inventoryCheck.checkDate'),
+      width: 120,
+    },
+    {
       field: 'operatorName',
       title: $t('wms.inventoryCheck.operatorName'),
       width: 100,
+    },
+    {
+      field: 'remark',
+      title: $t('wms.inventoryCheck.remark'),
+      minWidth: 150,
     },
     {
       field: 'createTime',

@@ -13,6 +13,7 @@ import { Button, message } from 'ant-design-vue';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import {
   deleteProcurement,
+  getProcurement,
   getProcurementList,
 } from '#/api/wms/procurement';
 import { usePermission } from '#/hooks';
@@ -22,7 +23,7 @@ import { useColumns, useSearchSchema } from './data';
 import Form from './modules/form.vue';
 
 // 权限控制
-const { canCreateProcurement, canApproveProcurement } = usePermission();
+const { canCreateProcurement } = usePermission();
 
 const [FormModal, formModalApi] = useVbenModal({
   connectedComponent: Form,
@@ -32,8 +33,10 @@ const [FormModal, formModalApi] = useVbenModal({
 /**
  * 编辑采购单
  */
-function onEdit(row: ProcurementApi.Procurement) {
-  formModalApi.setData(row).open();
+async function onEdit(row: ProcurementApi.Procurement) {
+  // 获取详情（包含采购明细）
+  const detail = await getProcurement(row.id);
+  formModalApi.setData(detail).open();
 }
 
 /**
@@ -105,9 +108,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
     fieldMappingTime: [['dateRange', ['startDate', 'endDate']]],
   },
   gridOptions: {
-    columns: useColumns(onActionClick, {
-      canApprove: canApproveProcurement.value,
-    }),
+    columns: useColumns(onActionClick),
     height: 'auto',
     keepSource: true,
     pagerConfig: {},

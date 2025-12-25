@@ -8,7 +8,7 @@ server:
 
 # 数据库配置（连接服务器本地 MySQL）
 database:
-  host: host.docker.internal
+  host: 120.25.179.240
   port: 3306
   username: easywms
   password: 111111

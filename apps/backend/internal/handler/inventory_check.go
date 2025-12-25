@@ -12,15 +12,16 @@ import (
 
 // InventoryCheck 盘点单模型
 type InventoryCheck struct {
-	ID         int64  `json:"id" gorm:"column:id;primaryKey"`
-	CheckNo    string `json:"checkNo" gorm:"column:check_no"`
-	OperatorID int64  `json:"operatorId" gorm:"column:operator_id"`
-	Status     string `json:"status" gorm:"column:status"`
-	CheckDate  string `json:"checkDate" gorm:"column:check_date"`
-	Remark     string `json:"remark" gorm:"column:remark"`
-	CreatedAt  string `json:"createTime" gorm:"column:created_at"`
-	UpdatedAt  string `json:"updateTime" gorm:"column:updated_at"`
+	ID        int64      `json:"id" gorm:"column:id;primaryKey"`
+	CheckNo   string     `json:"checkNo" gorm:"column:check_no"`
+	CheckerID *int64     `json:"checkerId" gorm:"column:checker_id"`
+	Status    string     `json:"status" gorm:"column:status"`
+	CheckDate *time.Time `json:"checkDate" gorm:"column:check_date"`
+	Remark    string     `json:"remark" gorm:"column:remark"`
+	CreatedAt time.Time  `json:"createTime" gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time  `json:"updateTime" gorm:"column:updated_at;autoUpdateTime"`
 	// 关联字段
+	OperatorID    int64  `json:"operatorId" gorm:"-"`
 	OperatorName  string `json:"operatorName" gorm:"-"`
 	WarehouseID   string `json:"warehouseId" gorm:"-"`
 	WarehouseName string `json:"warehouseName" gorm:"-"`
@@ -32,14 +33,13 @@ func (InventoryCheck) TableName() string {
 
 // InventoryCheckItem 盘点明细模型
 type InventoryCheckItem struct {
-	ID              int64   `json:"id" gorm:"column:id;primaryKey"`
-	CheckID         int64   `json:"checkId" gorm:"column:check_id"`
-	ProductID       int64   `json:"productId" gorm:"column:product_id"`
-	SystemQty       float64 `json:"systemQuantity" gorm:"column:system_qty"`
-	ActualQty       float64 `json:"actualQuantity" gorm:"column:actual_qty"`
-	DifferenceQty   float64 `json:"differenceQuantity" gorm:"column:difference_qty"`
-	Remark          string  `json:"remark" gorm:"column:remark"`
-	CreatedAt       string  `json:"createTime" gorm:"column:created_at"`
+	ID        int64     `json:"id" gorm:"column:id;primaryKey"`
+	CheckID   int64     `json:"checkId" gorm:"column:check_id"`
+	ProductID int64     `json:"productId" gorm:"column:product_id"`
+	BookQty   float64   `json:"systemQuantity" gorm:"column:book_qty"`
+	ActualQty float64   `json:"actualQuantity" gorm:"column:actual_qty"`
+	DiffQty   float64   `json:"differenceQuantity" gorm:"column:diff_qty"`
+	CreatedAt time.Time `json:"createTime" gorm:"column:created_at;autoCreateTime"`
 	// 关联字段
 	ProductName string `json:"productName" gorm:"-"`
 	ProductCode string `json:"productCode" gorm:"-"`
@@ -109,7 +109,9 @@ func (h *InventoryCheckHandler) GetInventoryCheckList(c *gin.Context) {
 	// 加载用户信息
 	userIDs := make([]int64, 0)
 	for _, check := range checks {
-		userIDs = append(userIDs, check.OperatorID)
+		if check.CheckerID != nil {
+			userIDs = append(userIDs, *check.CheckerID)
+		}
 	}
 
 	userMap := make(map[int64]string)
@@ -126,7 +128,10 @@ func (h *InventoryCheckHandler) GetInventoryCheckList(c *gin.Context) {
 
 	// 填充关联信息和状态转换
 	for i := range checks {
-		checks[i].OperatorName = userMap[checks[i].OperatorID]
+		if checks[i].CheckerID != nil {
+			checks[i].OperatorID = *checks[i].CheckerID
+			checks[i].OperatorName = userMap[*checks[i].CheckerID]
+		}
 		checks[i].WarehouseID = "1"
 		checks[i].WarehouseName = "默认仓库"
 
@@ -188,11 +193,14 @@ func (h *InventoryCheckHandler) GetInventoryCheck(c *gin.Context) {
 	}
 
 	// 获取操作员信息
-	var user struct {
-		RealName string `gorm:"column:real_name"`
+	if check.CheckerID != nil {
+		var user struct {
+			RealName string `gorm:"column:real_name"`
+		}
+		h.db.Table("sys_user").Where("id = ?", *check.CheckerID).First(&user)
+		check.OperatorID = *check.CheckerID
+		check.OperatorName = user.RealName
 	}
-	h.db.Table("sys_user").Where("id = ?", check.OperatorID).First(&user)
-	check.OperatorName = user.RealName
 
 	// 状态转换
 	dbStatus := check.Status
@@ -248,10 +256,10 @@ func (h *InventoryCheckHandler) CreateInventoryCheck(c *gin.Context) {
 	checkNo := fmt.Sprintf("CHK%s%03d", time.Now().Format("20060102150405"), time.Now().Nanosecond()%1000)
 
 	check := InventoryCheck{
-		CheckNo:    checkNo,
-		OperatorID: userIDInt,
-		Status:     "CHECKING",
-		Remark:     req.Remark,
+		CheckNo:   checkNo,
+		CheckerID: &userIDInt,
+		Status:    "CHECKING",
+		Remark:    req.Remark,
 	}
 
 	tx := h.db.Begin()
@@ -266,12 +274,11 @@ func (h *InventoryCheckHandler) CreateInventoryCheck(c *gin.Context) {
 		differenceQty := item.ActualQuantity - item.SystemQuantity
 
 		checkItem := InventoryCheckItem{
-			CheckID:       check.ID,
-			ProductID:     item.ProductID,
-			SystemQty:     item.SystemQuantity,
-			ActualQty:     item.ActualQuantity,
-			DifferenceQty: differenceQty,
-			Remark:        item.Remark,
+			CheckID:   check.ID,
+			ProductID: item.ProductID,
+			BookQty:   item.SystemQuantity,
+			ActualQty: item.ActualQuantity,
+			DiffQty:   differenceQty,
 		}
 		if err := tx.Create(&checkItem).Error; err != nil {
 			tx.Rollback()
@@ -324,7 +331,7 @@ func (h *InventoryCheckHandler) UpdateInventoryCheck(c *gin.Context) {
 		userIDInt := userID.(int64)
 
 		for _, item := range items {
-			if item.DifferenceQty != 0 {
+			if item.DiffQty != 0 {
 				// 更新产品库存
 				tx.Model(&Product{}).Where("id = ?", item.ProductID).
 					Update("stock_qty", item.ActualQty)
@@ -332,8 +339,8 @@ func (h *InventoryCheckHandler) UpdateInventoryCheck(c *gin.Context) {
 				// 记录库存流水
 				stockLog := StockLog{
 					ProductID:   item.ProductID,
-					Type:        "CHECK",
-					ChangeQty:   item.DifferenceQty,
+					Type:        "ADJUST",
+					ChangeQty:   item.DiffQty,
 					SnapshotQty: item.ActualQty,
 					RelatedNo:   check.CheckNo,
 					OperatorID:  &userIDInt,
@@ -342,7 +349,7 @@ func (h *InventoryCheckHandler) UpdateInventoryCheck(c *gin.Context) {
 			}
 		}
 
-		now := time.Now().Format("2006-01-02 15:04:05")
+		now := time.Now()
 		tx.Model(&check).Updates(map[string]interface{}{
 			"status":     dbStatus,
 			"check_date": now,
@@ -381,4 +388,3 @@ func (h *InventoryCheckHandler) DeleteInventoryCheck(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除成功"})
 }
-

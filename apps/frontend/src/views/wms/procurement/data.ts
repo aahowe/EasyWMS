@@ -5,16 +5,27 @@ import type { OnActionClickFn } from '#/adapter/vxe-table';
 import type { ProcurementApi } from '#/api/wms/procurement';
 
 import { z } from '#/adapter/form';
+import { getProductList } from '#/api/wms/product';
+import { getSupplierList } from '#/api/wms/supplier';
 import { $t } from '#/locales';
 
-// 采购单状态选项
+// 采购单状态选项 - 与数据库 biz_procurement 表 status 字段对应
 export const statusOptions = [
-  { label: '草稿', value: 'draft', color: 'default' },
-  { label: '待审核', value: 'pending', color: 'processing' },
-  { label: '已审核', value: 'approved', color: 'success' },
-  { label: '已完成', value: 'completed', color: 'success' },
-  { label: '已取消', value: 'cancelled', color: 'error' },
+  { label: '待审核', value: 'PENDING', color: 'processing' },
+  { label: '已审核', value: 'APPROVED', color: 'success' },
+  { label: '已下单', value: 'ORDERED', color: 'warning' },
+  { label: '已完成', value: 'DONE', color: 'success' },
+  { label: '已取消', value: 'REJECT', color: 'error' },
 ];
+
+// 状态显示映射
+export const statusLabels: Record<string, string> = {
+  PENDING: '待审核',
+  APPROVED: '已审核',
+  ORDERED: '已下单',
+  DONE: '已完成',
+  REJECT: '已取消',
+};
 
 /**
  * 获取编辑表单的字段配置
@@ -31,24 +42,23 @@ export function useSchema(): VbenFormSchema[] {
       },
     },
     {
-      component: 'Input',
-      fieldName: 'supplierName',
+      component: 'ApiSelect',
+      componentProps: {
+        api: async () => {
+          const res = await getSupplierList({ pageSize: 200, status: 1 });
+          return res.items.map((item) => ({
+            label: item.name,
+            value: item.id,
+          }));
+        },
+        placeholder: $t('common.pleaseSelect'),
+        allowClear: true,
+      },
+      fieldName: 'supplierId',
       label: $t('wms.procurement.supplierName'),
       rules: z
-        .string()
+        .number()
         .min(1, $t('ui.formRules.required', [$t('wms.procurement.supplierName')])),
-    },
-    {
-      component: 'DatePicker',
-      componentProps: {
-        class: 'w-full',
-        valueFormat: 'YYYY-MM-DD',
-      },
-      fieldName: 'orderDate',
-      label: $t('wms.procurement.orderDate'),
-      rules: z
-        .string()
-        .min(1, $t('ui.formRules.required', [$t('wms.procurement.orderDate')])),
     },
     {
       component: 'DatePicker',
@@ -67,7 +77,7 @@ export function useSchema(): VbenFormSchema[] {
           value: item.value,
         })),
       },
-      defaultValue: 'draft',
+      defaultValue: 'PENDING',
       fieldName: 'status',
       label: $t('wms.procurement.status'),
     },
@@ -75,17 +85,32 @@ export function useSchema(): VbenFormSchema[] {
       component: 'Textarea',
       componentProps: {
         maxLength: 200,
-        rows: 3,
+        rows: 2,
         showCount: true,
       },
-      fieldName: 'remark',
-      label: $t('wms.procurement.remark'),
+      fieldName: 'reason',
+      label: '采购原因',
     },
   ];
 }
 
 /**
+ * 获取产品选择器选项
+ */
+export async function getProductOptions() {
+  const res = await getProductList({ pageSize: 500, status: 1 });
+  return res.items.map((item) => ({
+    label: `${item.code} - ${item.name}`,
+    value: item.id,
+    code: item.code,
+    name: item.name,
+    unit: item.unit,
+  }));
+}
+
+/**
  * 获取搜索表单的字段配置
+ * 字段与数据库 biz_procurement 表保持一致
  */
 export function useSearchSchema(): VbenFormSchema[] {
   return [
@@ -113,13 +138,14 @@ export function useSearchSchema(): VbenFormSchema[] {
         valueFormat: 'YYYY-MM-DD',
       },
       fieldName: 'dateRange',
-      label: $t('wms.procurement.orderDate'),
+      label: $t('wms.procurement.createTime'),
     },
   ];
 }
 
 /**
  * 获取表格列配置
+ * 字段与数据库 biz_procurement 表保持一致
  */
 export function useColumns(
   onActionClick?: OnActionClickFn<ProcurementApi.Procurement>,
@@ -129,7 +155,7 @@ export function useColumns(
     {
       field: 'orderNo',
       title: $t('wms.procurement.orderNo'),
-      width: 160,
+      width: 180,
     },
     {
       field: 'supplierName',
@@ -137,9 +163,9 @@ export function useColumns(
       minWidth: 150,
     },
     {
-      field: 'orderDate',
-      title: $t('wms.procurement.orderDate'),
-      width: 120,
+      field: 'reason',
+      title: '采购原因',
+      minWidth: 150,
     },
     {
       field: 'expectedDate',
@@ -159,17 +185,20 @@ export function useColumns(
         name: 'CellTag',
         props: {
           colors: {
-            draft: 'default',
-            pending: 'processing',
-            approved: 'success',
-            completed: 'success',
-            cancelled: 'error',
+            PENDING: 'processing',
+            APPROVED: 'success',
+            ORDERED: 'warning',
+            DONE: 'success',
+            REJECT: 'error',
           },
         },
       },
       field: 'status',
       title: $t('wms.procurement.status'),
       width: 100,
+      formatter: ({ cellValue }) => {
+        return statusLabels[cellValue] || cellValue;
+      },
     },
     {
       field: 'createTime',

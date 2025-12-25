@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -10,14 +11,14 @@ import (
 
 // StockLog 库存流水模型
 type StockLog struct {
-	ID          int64   `json:"id" gorm:"column:id;primaryKey"`
-	ProductID   int64   `json:"productId" gorm:"column:product_id"`
-	Type        string  `json:"type" gorm:"column:type"`
-	ChangeQty   float64 `json:"changeQty" gorm:"column:change_qty"`
-	SnapshotQty float64 `json:"snapshotQty" gorm:"column:snapshot_qty"`
-	RelatedNo   string  `json:"relatedNo" gorm:"column:related_no"`
-	OperatorID  *int64  `json:"operatorId" gorm:"column:operator_id"`
-	CreatedAt   string  `json:"createTime" gorm:"column:created_at"`
+	ID          int64     `json:"id" gorm:"column:id;primaryKey"`
+	ProductID   int64     `json:"productId" gorm:"column:product_id"`
+	Type        string    `json:"type" gorm:"column:type"`
+	ChangeQty   float64   `json:"changeQty" gorm:"column:change_qty"`
+	SnapshotQty float64   `json:"snapshotQty" gorm:"column:snapshot_qty"`
+	RelatedNo   string    `json:"relatedNo" gorm:"column:related_no"`
+	OperatorID  *int64    `json:"operatorId" gorm:"column:operator_id"`
+	CreatedAt   time.Time `json:"createTime" gorm:"column:created_at;autoCreateTime"`
 }
 
 func (StockLog) TableName() string {
@@ -112,7 +113,7 @@ func (h *StockHandler) GetStockList(c *gin.Context) {
 			Quantity:          p.StockQty,
 			AvailableQuantity: p.StockQty,
 			AlertThreshold:    p.AlertThreshold,
-			UpdateTime:        p.UpdatedAt,
+			UpdateTime:        p.UpdatedAt.Format("2006-01-02 15:04:05"),
 		}
 	}
 
@@ -251,7 +252,7 @@ func (h *StockHandler) GetStockLogs(c *gin.Context) {
 			SnapshotQty:  log.SnapshotQty,
 			RelatedNo:    log.RelatedNo,
 			OperatorName: operatorName,
-			CreateTime:   log.CreatedAt,
+			CreateTime:   log.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 	}
 

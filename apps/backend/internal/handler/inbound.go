@@ -12,16 +12,16 @@ import (
 
 // Inbound 入库单模型
 type Inbound struct {
-	ID              int64  `json:"id" gorm:"column:id;primaryKey"`
-	InboundNo       string `json:"orderNo" gorm:"column:inbound_no"`
-	SourceID        *int64 `json:"sourceId" gorm:"column:source_id"`
-	IsTemporary     int    `json:"isTemporary" gorm:"column:is_temporary"`
-	Status          int    `json:"statusCode" gorm:"column:status"`
-	InboundDate     string `json:"inboundDate" gorm:"column:inbound_date"`
-	WarehouseUserID *int64 `json:"operatorId" gorm:"column:warehouse_user_id"`
-	Remark          string `json:"remark" gorm:"column:remark"`
-	CreatedAt       string `json:"createTime" gorm:"column:created_at"`
-	UpdatedAt       string `json:"updateTime" gorm:"column:updated_at"`
+	ID              int64      `json:"id" gorm:"column:id;primaryKey"`
+	InboundNo       string     `json:"orderNo" gorm:"column:inbound_no"`
+	SourceID        *int64     `json:"sourceId" gorm:"column:source_id"`
+	IsTemporary     int        `json:"isTemporary" gorm:"column:is_temporary"`
+	Status          int        `json:"statusCode" gorm:"column:status"`
+	InboundDate     *time.Time `json:"inboundDate" gorm:"column:inbound_date"`
+	WarehouseUserID *int64     `json:"operatorId" gorm:"column:warehouse_user_id"`
+	Remark          string     `json:"remark" gorm:"column:remark"`
+	CreatedAt       time.Time  `json:"createTime" gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt       time.Time  `json:"updateTime" gorm:"column:updated_at;autoUpdateTime"`
 	// 关联字段
 	Status_       string  `json:"status" gorm:"-"`
 	Type          string  `json:"type" gorm:"-"`
@@ -37,12 +37,12 @@ func (Inbound) TableName() string {
 
 // InboundItem 入库明细模型
 type InboundItem struct {
-	ID        int64   `json:"id" gorm:"column:id;primaryKey"`
-	InboundID int64   `json:"inboundId" gorm:"column:inbound_id"`
-	ProductID int64   `json:"productId" gorm:"column:product_id"`
-	ActualQty float64 `json:"quantity" gorm:"column:actual_qty"`
-	Location  string  `json:"locationName" gorm:"column:location"`
-	CreatedAt string  `json:"createTime" gorm:"column:created_at"`
+	ID        int64     `json:"id" gorm:"column:id;primaryKey"`
+	InboundID int64     `json:"inboundId" gorm:"column:inbound_id"`
+	ProductID int64     `json:"productId" gorm:"column:product_id"`
+	ActualQty float64   `json:"quantity" gorm:"column:actual_qty"`
+	Location  string    `json:"locationName" gorm:"column:location"`
+	CreatedAt time.Time `json:"createTime" gorm:"column:created_at;autoCreateTime"`
 	// 关联字段
 	ProductName string `json:"productName" gorm:"-"`
 	ProductCode string `json:"productCode" gorm:"-"`
@@ -228,13 +228,20 @@ func (h *InboundHandler) GetInbound(c *gin.Context) {
 		}
 	}
 
+	// 状态转换
+	status := "draft"
+	if inbound.Status == 1 {
+		status = "completed"
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"data": gin.H{
 			"id":          inbound.ID,
 			"orderNo":     inbound.InboundNo,
 			"sourceId":    inbound.SourceID,
-			"status":      inbound.Status_,
+			"isTemporary": inbound.IsTemporary,
+			"status":      status,
 			"inboundDate": inbound.InboundDate,
 			"remark":      inbound.Remark,
 			"createTime":  inbound.CreatedAt,
@@ -265,11 +272,14 @@ func (h *InboundHandler) CreateInbound(c *gin.Context) {
 	userIDInt := userID.(int64)
 	inboundNo := fmt.Sprintf("IN%s%03d", time.Now().Format("20060102150405"), time.Now().Nanosecond()%1000)
 
+	// 创建时设置入库日期为当前时间
+	now := time.Now()
 	inbound := Inbound{
 		InboundNo:       inboundNo,
 		SourceID:        req.SourceID,
 		IsTemporary:     req.IsTemporary,
 		Status:          0,
+		InboundDate:     &now,
 		WarehouseUserID: &userIDInt,
 		Remark:          req.Remark,
 	}
@@ -309,9 +319,22 @@ func (h *InboundHandler) UpdateInbound(c *gin.Context) {
 		return
 	}
 
+	// 已完成的入库单不允许修改
+	if inbound.Status == 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "已完成的入库单不能修改"})
+		return
+	}
+
 	var req struct {
-		Status string `json:"status"`
-		Remark string `json:"remark"`
+		SourceID    *int64 `json:"sourceId"`
+		IsTemporary int    `json:"isTemporary"`
+		Status      string `json:"status"`
+		Remark      string `json:"remark"`
+		Items       []struct {
+			ProductID int64   `json:"productId"`
+			Quantity  float64 `json:"quantity"`
+			Location  string  `json:"location"`
+		} `json:"items"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
@@ -327,19 +350,17 @@ func (h *InboundHandler) UpdateInbound(c *gin.Context) {
 
 	// 如果状态变为已完成，需要更新库存
 	if statusCode == 1 && inbound.Status == 0 {
-		var items []InboundItem
-		h.db.Where("inbound_id = ?", id).Find(&items)
-
-		for _, item := range items {
+		// 使用新的明细数据计算库存
+		for _, item := range req.Items {
 			// 更新产品库存
 			tx.Model(&Product{}).Where("id = ?", item.ProductID).
-				Update("stock_qty", gorm.Expr("stock_qty + ?", item.ActualQty))
+				Update("stock_qty", gorm.Expr("stock_qty + ?", item.Quantity))
 
 			// 记录库存流水
 			stockLog := StockLog{
 				ProductID:  item.ProductID,
 				Type:       "IN",
-				ChangeQty:  item.ActualQty,
+				ChangeQty:  item.Quantity,
 				RelatedNo:  inbound.InboundNo,
 				OperatorID: inbound.WarehouseUserID,
 			}
@@ -353,17 +374,36 @@ func (h *InboundHandler) UpdateInbound(c *gin.Context) {
 		}
 
 		// 更新入库时间
-		now := time.Now().Format("2006-01-02 15:04:05")
+		now := time.Now()
 		tx.Model(&inbound).Updates(map[string]interface{}{
+			"source_id":    req.SourceID,
+			"is_temporary": req.IsTemporary,
 			"status":       statusCode,
 			"inbound_date": now,
 			"remark":       req.Remark,
 		})
 	} else {
+		// 更新主表字段（除日期外）
 		tx.Model(&inbound).Updates(map[string]interface{}{
-			"status": statusCode,
-			"remark": req.Remark,
+			"source_id":    req.SourceID,
+			"is_temporary": req.IsTemporary,
+			"status":       statusCode,
+			"remark":       req.Remark,
 		})
+	}
+
+	// 更新明细：先删除旧的，再插入新的
+	if len(req.Items) > 0 {
+		tx.Where("inbound_id = ?", id).Delete(&InboundItem{})
+		for _, item := range req.Items {
+			inboundItem := InboundItem{
+				InboundID: inbound.ID,
+				ProductID: item.ProductID,
+				ActualQty: item.Quantity,
+				Location:  item.Location,
+			}
+			tx.Create(&inboundItem)
+		}
 	}
 
 	tx.Commit()
