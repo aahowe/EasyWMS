@@ -40,7 +40,12 @@ docker compose logs -f
 
 默认管理员账号：
 - 用户名：`admin`
-- 密码：`admin123`
+- 密码：`123456`
+
+其他测试账号（密码均为 `123456`）：
+- `buyer01` - 采购专员
+- `warehouse01` - 仓库管理员
+- `staff01` - 部门员工
 
 ### 4. 自定义配置（可选）
 
@@ -68,8 +73,7 @@ EasyWMS/
 │       ├── Dockerfile      # 前端 Dockerfile
 │       └── nginx.conf      # Nginx 配置
 └── db/
-    ├── schema.sql          # 数据库结构（需手动导入）
-    └── data.sql            # 初始数据（需手动导入）
+    └── init_all.sql        # 完整初始化脚本（需手动导入）
 ```
 
 ## ⚙️ 配置说明
